@@ -1,0 +1,257 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Upload, Plus, Download, Trash2, X } from 'lucide-react';
+import * as XLSX from 'xlsx';
+
+const BarcodeGenerator = () => {
+  const [codes, setCodes] = useState([]);
+  const [manualCode, setManualCode] = useState('');
+  const [barcodeType, setBarcodeType] = useState('CODE128');
+  const canvasRefs = useRef({});
+
+  // Cargar la librería JsBarcode desde CDN
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.5/JsBarcode.all.min.js';
+    script.async = true;
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
+  // Generar códigos de barras cuando cambien los códigos
+  useEffect(() => {
+    if (window.JsBarcode && codes.length > 0) {
+      codes.forEach((code, index) => {
+        const canvas = canvasRefs.current[index];
+        if (canvas) {
+          try {
+            window.JsBarcode(canvas, code.value, {
+              format: barcodeType,
+              width: 2,
+              height: 100,
+              displayValue: true,
+              fontSize: 14,
+              margin: 10
+            });
+          } catch (error) {
+            console.error(`Error generando código de barras para ${code.value}:`, error);
+          }
+        }
+      });
+    }
+  }, [codes, barcodeType]);
+
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    try {
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data);
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+      const newCodes = jsonData
+        .flat()
+        .filter(code => code !== null && code !== undefined && code !== '')
+        .map(code => ({
+          id: Date.now() + Math.random(),
+          value: String(code).trim()
+        }));
+
+      setCodes(prev => [...prev, ...newCodes]);
+    } catch (error) {
+      alert('Error al leer el archivo Excel. Asegúrate de que sea un archivo válido.');
+      console.error(error);
+    }
+
+    event.target.value = '';
+  };
+
+  const handleAddManualCode = () => {
+    if (manualCode.trim()) {
+      setCodes(prev => [...prev, {
+        id: Date.now(),
+        value: manualCode.trim()
+      }]);
+      setManualCode('');
+    }
+  };
+
+  const handleDeleteCode = (id) => {
+    setCodes(prev => prev.filter(code => code.id !== id));
+  };
+
+  const handleClearAll = () => {
+    if (window.confirm('¿Estás seguro de que deseas eliminar todos los códigos?')) {
+      setCodes([]);
+    }
+  };
+
+  const downloadBarcode = (index, codeValue) => {
+    const canvas = canvasRefs.current[index];
+    if (canvas) {
+      const url = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = `barcode_${codeValue}.png`;
+      link.href = url;
+      link.click();
+    }
+  };
+
+  const downloadAllBarcodes = () => {
+    codes.forEach((code, index) => {
+      setTimeout(() => {
+        downloadBarcode(index, code.value);
+      }, index * 100);
+    });
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
+      <div className="max-w-6xl mx-auto">
+        <div className="bg-white rounded-2xl shadow-xl p-8">
+          <h1 className="text-4xl font-bold text-gray-800 mb-2 text-center">
+            Generador de Códigos de Barras
+          </h1>
+          <p className="text-gray-600 text-center mb-8">
+            Sube un archivo Excel o ingresa códigos manualmente
+          </p>
+
+          {/* Sección de configuración */}
+          <div className="mb-8 p-6 bg-gray-50 rounded-xl">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Tipo de Código de Barras
+            </label>
+            <select
+              value={barcodeType}
+              onChange={(e) => setBarcodeType(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="CODE128">CODE128 (Universal)</option>
+              <option value="EAN13">EAN13 (Productos)</option>
+              <option value="UPC">UPC (Productos USA)</option>
+              <option value="CODE39">CODE39 (Industrial)</option>
+              <option value="ITF14">ITF14 (Cajas)</option>
+            </select>
+          </div>
+
+          {/* Sección de carga de archivo */}
+          <div className="mb-6">
+            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-blue-300 rounded-xl cursor-pointer bg-blue-50 hover:bg-blue-100 transition-colors">
+              <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                <Upload className="w-10 h-10 text-blue-500 mb-2" />
+                <p className="text-sm text-gray-600">
+                  <span className="font-semibold">Click para subir</span> o arrastra un archivo Excel
+                </p>
+                <p className="text-xs text-gray-500 mt-1">XLSX, XLS</p>
+              </div>
+              <input
+                type="file"
+                className="hidden"
+                accept=".xlsx,.xls"
+                onChange={handleFileUpload}
+              />
+            </label>
+          </div>
+
+          {/* Entrada manual */}
+          <div className="mb-8">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              O ingresa un código manualmente
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={manualCode}
+                onChange={(e) => setManualCode(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleAddManualCode()}
+                placeholder="Ingresa un código..."
+                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <button
+                onClick={handleAddManualCode}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+              >
+                <Plus size={20} />
+                Agregar
+              </button>
+            </div>
+          </div>
+
+          {/* Lista de códigos y botones de acción */}
+          {codes.length > 0 && (
+            <>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold text-gray-800">
+                  Códigos de Barras Generados ({codes.length})
+                </h2>
+                <div className="flex gap-2">
+                  <button
+                    onClick={downloadAllBarcodes}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+                  >
+                    <Download size={18} />
+                    Descargar Todos
+                  </button>
+                  <button
+                    onClick={handleClearAll}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+                  >
+                    <Trash2 size={18} />
+                    Limpiar Todo
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {codes.map((code, index) => (
+                  <div
+                    key={code.id}
+                    className="bg-white border-2 border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow"
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <span className="text-sm font-medium text-gray-700">
+                        {code.value}
+                      </span>
+                      <button
+                        onClick={() => handleDeleteCode(code.id)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <X size={18} />
+                      </button>
+                    </div>
+                    <div className="bg-white p-2 rounded border border-gray-200 mb-3">
+                      <canvas
+                        ref={(el) => (canvasRefs.current[index] = el)}
+                        className="w-full"
+                      />
+                    </div>
+                    <button
+                      onClick={() => downloadBarcode(index, code.value)}
+                      className="w-full px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm flex items-center justify-center gap-2"
+                    >
+                      <Download size={16} />
+                      Descargar
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {codes.length === 0 && (
+            <div className="text-center py-12 text-gray-500">
+              <p className="text-lg">No hay códigos de barras generados aún</p>
+              <p className="text-sm mt-2">Sube un archivo Excel o ingresa códigos manualmente</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default BarcodeGenerator;
