@@ -278,6 +278,47 @@
             display: block;
         }
 
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .pagination button {
+            padding: 0.5rem 1rem;
+            border: 1px solid #D1D5DB;
+            background: white;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: #F3F4F6;
+            border-color: #3B82F6;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination button.active {
+            background: #3B82F6;
+            color: white;
+            border-color: #3B82F6;
+        }
+
+        .pagination-info {
+            font-size: 0.875rem;
+            color: #6B7280;
+            margin: 0 0.5rem;
+        }
+
         @media (max-width: 768px) {
             h1 {
                 font-size: 1.875rem;
@@ -294,6 +335,15 @@
 
             .action-buttons {
                 flex-direction: column;
+            }
+
+            .pagination button {
+                padding: 0.4rem 0.6rem;
+                font-size: 0.75rem;
+            }
+
+            .pagination-info {
+                font-size: 0.75rem;
             }
         }
     </style>
@@ -318,16 +368,18 @@
                 </p>
             </div>
 
-            <label class="upload-area" for="fileInput">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
-                </svg>
-                <p class="upload-text">
-                    <span class="upload-text-bold">Click para subir</span> o arrastra un archivo Excel
-                </p>
-                <p class="upload-text-small">XLSX, XLS</p>
-                <input type="file" id="fileInput" accept=".xlsx,.xls">
-            </label>
+            <div style="margin-bottom: 1.5rem;">
+                <label class="upload-area" for="fileInput">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                    </svg>
+                    <p class="upload-text">
+                        <span class="upload-text-bold">Click para subir</span> o arrastra un archivo
+                    </p>
+                    <p class="upload-text-small">XLSX, XLS o TXT (un código por línea)</p>
+                </label>
+                <input type="file" id="fileInput" accept=".xlsx,.xls,.txt" style="display: none;">
+            </div>
 
             <div class="config-section">
                 <label for="manualCode">O ingresa un código manualmente</label>
@@ -361,11 +413,21 @@
                     </div>
                 </div>
                 <div id="barcodeGrid" class="grid"></div>
+                
+                <div id="paginationControls" class="pagination">
+                    <button id="firstPageBtn">Primera</button>
+                    <button id="prevPageBtn">Anterior</button>
+                    <span class="pagination-info">
+                        Página <span id="currentPageNum">1</span> de <span id="totalPages">1</span>
+                    </span>
+                    <button id="nextPageBtn">Siguiente</button>
+                    <button id="lastPageBtn">Última</button>
+                </div>
             </div>
 
             <div id="emptyState" class="empty-state">
                 <p class="empty-state-title">No hay códigos de barras generados aún</p>
-                <p class="empty-state-text">Sube un archivo Excel o ingresa códigos manualmente</p>
+                <p class="empty-state-text">Sube un archivo Excel (.xlsx, .xls), Texto (.txt) o ingresa códigos manualmente</p>
             </div>
         </div>
     </div>
@@ -373,6 +435,8 @@
     <script>
         let codes = [];
         let barcodeType = 'CODE128';
+        let currentPage = 1;
+        const codesPerPage = 12; // Códigos por página
 
         const fileInput = document.getElementById('fileInput');
         const manualCodeInput = document.getElementById('manualCode');
@@ -384,6 +448,15 @@
         const codeCount = document.getElementById('codeCount');
         const downloadAllBtn = document.getElementById('downloadAllBtn');
         const clearAllBtn = document.getElementById('clearAllBtn');
+        
+        // Elementos de paginación
+        const firstPageBtn = document.getElementById('firstPageBtn');
+        const prevPageBtn = document.getElementById('prevPageBtn');
+        const nextPageBtn = document.getElementById('nextPageBtn');
+        const lastPageBtn = document.getElementById('lastPageBtn');
+        const currentPageNum = document.getElementById('currentPageNum');
+        const totalPagesEl = document.getElementById('totalPages');
+        const paginationControls = document.getElementById('paginationControls');
 
         // Cambiar tipo de código de barras
         barcodeTypeSelect.addEventListener('change', (e) => {
@@ -405,37 +478,101 @@
             formatInfo.textContent = messages[barcodeType] || '';
         }
 
-        // Subir archivo Excel
+        // Subir archivo Excel o TXT
         fileInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
 
+            // Mostrar mensaje de carga
+            emptyState.innerHTML = '<p class="empty-state-title" style="color: #3B82F6;">⏳ Cargando archivo... Por favor espera</p>';
+            emptyState.style.display = 'block';
+
             try {
-                const data = await file.arrayBuffer();
-                const workbook = XLSX.read(data);
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                console.log('Leyendo archivo:', file.name);
+                const fileName = file.name.toLowerCase();
+                const newCodes = [];
 
-                const newCodes = jsonData
-                    .flat()
-                    .filter(code => code !== null && code !== undefined && code !== '')
-                    .map(code => {
-                        const original = String(code).trim();
-                        const adapted = adaptCodeToFormat(original, barcodeType);
-                        return {
-                            id: Date.now() + Math.random(),
-                            value: adapted,
-                            original: original
-                        };
+                // Detectar tipo de archivo
+                if (fileName.endsWith('.txt')) {
+                    // Procesar archivo TXT
+                    console.log('Procesando archivo de texto...');
+                    const text = await file.text();
+                    const lines = text.split(/\r?\n/); // Soportar saltos de línea Windows y Unix
+                    
+                    console.log('Líneas encontradas:', lines.length);
+                    
+                    lines.forEach(line => {
+                        const trimmedLine = line.trim();
+                        if (trimmedLine !== '') {
+                            const original = trimmedLine;
+                            try {
+                                const adapted = adaptCodeToFormat(original, barcodeType);
+                                newCodes.push({
+                                    id: Date.now() + Math.random(),
+                                    value: adapted,
+                                    original: original
+                                });
+                            } catch (err) {
+                                console.warn('No se pudo adaptar el código:', original, err);
+                            }
+                        }
                     });
+                    
+                } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+                    // Procesar archivo Excel
+                    console.log('Procesando archivo Excel...');
+                    const data = await file.arrayBuffer();
+                    
+                    const workbook = XLSX.read(data);
+                    console.log('Hojas disponibles:', workbook.SheetNames);
+                    
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                    
+                    console.log('Filas encontradas:', jsonData.length);
+                    
+                    jsonData.flat().forEach(code => {
+                        if (code !== null && code !== undefined && code !== '') {
+                            const original = String(code).trim();
+                            try {
+                                const adapted = adaptCodeToFormat(original, barcodeType);
+                                newCodes.push({
+                                    id: Date.now() + Math.random(),
+                                    value: adapted,
+                                    original: original
+                                });
+                            } catch (err) {
+                                console.warn('No se pudo adaptar el código:', original, err);
+                            }
+                        }
+                    });
+                } else {
+                    throw new Error('Formato de archivo no soportado. Use .xlsx, .xls o .txt');
+                }
 
-                codes.push(...newCodes);
-                renderBarcodes();
+                console.log('Códigos procesados:', newCodes.length);
+
+                if (newCodes.length === 0) {
+                    emptyState.innerHTML = `
+                        <p class="empty-state-title" style="color: #EF4444;">❌ No se encontraron códigos</p>
+                        <p class="empty-state-text">Asegúrate de que el archivo contenga datos</p>
+                    `;
+                    alert('No se encontraron códigos en el archivo. Asegúrate de que contenga datos.');
+                } else {
+                    codes.push(...newCodes);
+                    currentPage = 1; // Volver a la primera página
+                    alert(`✅ Se cargaron ${newCodes.length} códigos exitosamente!`);
+                    renderBarcodes();
+                }
             } catch (error) {
-                alert('Error al leer el archivo Excel. Asegúrate de que sea un archivo válido.');
-                console.error(error);
+                console.error('Error completo:', error);
+                emptyState.innerHTML = `
+                    <p class="empty-state-title" style="color: #EF4444;">❌ Error al cargar el archivo</p>
+                    <p class="empty-state-text">${error.message}</p>
+                `;
+                alert('Error al leer el archivo: ' + error.message + '\n\nAsegúrate de que sea un archivo válido (.xlsx, .xls o .txt).');
             }
-
+            
             e.target.value = '';
         });
 
@@ -535,6 +672,9 @@
                     original: value
                 });
                 manualCodeInput.value = '';
+                
+                // Ir a la última página donde está el nuevo código
+                currentPage = Math.ceil(codes.length / codesPerPage);
                 renderBarcodes();
             }
         }
@@ -547,6 +687,13 @@
         // Eliminar código
         function deleteCode(id) {
             codes = codes.filter(code => code.id !== id);
+            
+            // Ajustar página si es necesario
+            const totalPages = Math.ceil(codes.length / codesPerPage);
+            if (currentPage > totalPages && totalPages > 0) {
+                currentPage = totalPages;
+            }
+            
             renderBarcodes();
         }
 
@@ -554,8 +701,35 @@
         clearAllBtn.addEventListener('click', () => {
             if (confirm('¿Estás seguro de que deseas eliminar todos los códigos?')) {
                 codes = [];
+                currentPage = 1;
                 renderBarcodes();
             }
+        });
+
+        // Controles de paginación
+        firstPageBtn.addEventListener('click', () => {
+            currentPage = 1;
+            renderBarcodes();
+        });
+
+        prevPageBtn.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderBarcodes();
+            }
+        });
+
+        nextPageBtn.addEventListener('click', () => {
+            const totalPages = Math.ceil(codes.length / codesPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderBarcodes();
+            }
+        });
+
+        lastPageBtn.addEventListener('click', () => {
+            currentPage = Math.ceil(codes.length / codesPerPage);
+            renderBarcodes();
         });
 
         // Descargar código individual
@@ -569,10 +743,35 @@
 
         // Descargar todos
         downloadAllBtn.addEventListener('click', () => {
-            const canvases = document.querySelectorAll('.barcode-container canvas');
-            canvases.forEach((canvas, index) => {
+            if (codes.length === 0) return;
+            
+            const confirmed = confirm(`¿Descargar todos los ${codes.length} códigos de barras? Esto puede tomar unos segundos.`);
+            if (!confirmed) return;
+            
+            // Crear un canvas temporal para generar y descargar todos los códigos
+            const tempCanvas = document.createElement('canvas');
+            
+            codes.forEach((code, index) => {
                 setTimeout(() => {
-                    downloadBarcode(canvas, codes[index].value);
+                    const adaptedValue = adaptCodeToFormat(code.original || code.value, barcodeType);
+                    try {
+                        JsBarcode(tempCanvas, adaptedValue, {
+                            format: barcodeType,
+                            width: 2,
+                            height: 100,
+                            displayValue: true,
+                            fontSize: 14,
+                            margin: 10
+                        });
+                        
+                        const url = tempCanvas.toDataURL('image/png');
+                        const link = document.createElement('a');
+                        link.download = `barcode_${adaptedValue}.png`;
+                        link.href = url;
+                        link.click();
+                    } catch (error) {
+                        console.error(`Error generando código ${adaptedValue}:`, error);
+                    }
                 }, index * 100);
             });
         });
@@ -589,11 +788,35 @@
             emptyState.style.display = 'none';
             codeCount.textContent = codes.length;
 
+            // Calcular paginación
+            const totalPages = Math.ceil(codes.length / codesPerPage);
+            const startIndex = (currentPage - 1) * codesPerPage;
+            const endIndex = startIndex + codesPerPage;
+            const currentCodes = codes.slice(startIndex, endIndex);
+
+            // Actualizar información de paginación
+            currentPageNum.textContent = currentPage;
+            totalPagesEl.textContent = totalPages;
+
+            // Habilitar/deshabilitar botones
+            firstPageBtn.disabled = currentPage === 1;
+            prevPageBtn.disabled = currentPage === 1;
+            nextPageBtn.disabled = currentPage === totalPages;
+            lastPageBtn.disabled = currentPage === totalPages;
+
+            // Mostrar/ocultar controles de paginación
+            if (codes.length <= codesPerPage) {
+                paginationControls.style.display = 'none';
+            } else {
+                paginationControls.style.display = 'flex';
+            }
+
             barcodeGrid.innerHTML = '';
 
-            codes.forEach((code, index) => {
+            currentCodes.forEach((code, index) => {
                 // Adaptar el código al formato actual
                 const adaptedValue = adaptCodeToFormat(code.original || code.value, barcodeType);
+                const globalIndex = startIndex + index; // Índice global para el canvas ID
                 
                 const card = document.createElement('div');
                 card.className = 'barcode-card';
@@ -659,6 +882,11 @@
                     }
                 }, 10);
             });
+
+            // Scroll al inicio de la página de resultados
+            if (currentPage > 1) {
+                resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         }
 
         // Hacer funciones globales
