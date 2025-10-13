@@ -55,6 +55,111 @@
             margin-bottom: 2rem;
         }
 
+        .customization-section {
+            background: #F9FAFB;
+            border-radius: 0.75rem;
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .customization-header {
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #EFF6FF;
+            transition: background 0.2s;
+        }
+
+        .customization-header:hover {
+            background: #DBEAFE;
+        }
+
+        .customization-header h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1F2937;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .customization-content {
+            padding: 1.5rem;
+            display: none;
+        }
+
+        .customization-content.show {
+            display: block;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-group input[type="number"],
+        .form-group input[type="text"],
+        .form-group input[type="color"] {
+            padding: 0.5rem;
+            border: 1px solid #D1D5DB;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+        }
+
+        .form-group input[type="color"] {
+            height: 40px;
+            cursor: pointer;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .preview-box {
+            background: white;
+            border: 2px dashed #D1D5DB;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-top: 1rem;
+            text-align: center;
+        }
+
+        .preview-box canvas {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .arrow-icon {
+            transition: transform 0.3s;
+        }
+
+        .arrow-icon.rotated {
+            transform: rotate(180deg);
+        }
+
         label {
             display: block;
             font-size: 0.875rem;
@@ -91,16 +196,10 @@
             cursor: pointer;
             transition: background 0.2s;
             margin-bottom: 1.5rem;
-            position: relative;
         }
 
         .upload-area:hover {
             background: #DBEAFE;
-        }
-
-        .upload-icon {
-            color: #3B82F6;
-            margin-bottom: 0.5rem;
         }
 
         .upload-text {
@@ -308,12 +407,6 @@
             cursor: not-allowed;
         }
 
-        .pagination button.active {
-            background: #3B82F6;
-            color: white;
-            border-color: #3B82F6;
-        }
-
         .pagination-info {
             font-size: 0.875rem;
             color: #6B7280;
@@ -353,7 +446,9 @@
     <div class="container">
         <div class="card">
             <h1>Generador de Códigos de Barras</h1>
-            <p class="subtitle">Sube un archivo Excel o ingresa códigos manualmente</p>
+            <p class="subtitle">
+                Sube un archivo Excel (.xlsx, .xls), Texto (.txt) o ingresa códigos manualmente
+            </p>
 
             <div class="config-section">
                 <label for="barcodeType">Tipo de Código de Barras</label>
@@ -367,6 +462,92 @@
                 <p id="formatInfo" style="margin-top: 0.5rem; font-size: 0.75rem; color: #6B7280;">
                     💡 CODE128 acepta cualquier texto o números
                 </p>
+            </div>
+
+            <div class="customization-section">
+                <div class="customization-header" id="customizationToggle">
+                    <h3>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M12 1v6m0 6v6m7.071-13.071l-4.243 4.243m-5.656 5.656l-4.243 4.243M1 12h6m6 0h6m-13.071 7.071l4.243-4.243m5.656-5.656l4.243-4.243"></path>
+                        </svg>
+                        Personalización Avanzada
+                    </h3>
+                    <svg class="arrow-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+                <div class="customization-content" id="customizationContent">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="barcodeWidth">Grosor de Barras</label>
+                            <input type="number" id="barcodeWidth" min="1" max="5" step="0.5" value="2">
+                        </div>
+                        <div class="form-group">
+                            <label for="barcodeHeight">Altura del Código (px)</label>
+                            <input type="number" id="barcodeHeight" min="50" max="300" step="10" value="100">
+                        </div>
+                        <div class="form-group">
+                            <label for="fontSize">Tamaño de Fuente</label>
+                            <input type="number" id="fontSize" min="8" max="30" step="1" value="14">
+                        </div>
+                        <div class="form-group">
+                            <label for="margin">Margen (px)</label>
+                            <input type="number" id="margin" min="0" max="50" step="5" value="10">
+                        </div>
+                        <div class="form-group">
+                            <label for="bgColor">Color de Fondo</label>
+                            <input type="color" id="bgColor" value="#ffffff">
+                        </div>
+                        <div class="form-group">
+                            <label for="lineColor">Color de Barras</label>
+                            <input type="color" id="lineColor" value="#000000">
+                        </div>
+                        <div class="form-group">
+                            <label for="borderWidth">Grosor Contorno (px)</label>
+                            <input type="number" id="borderWidth" min="0" max="10" step="1" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="borderColor">Color Contorno</label>
+                            <input type="color" id="borderColor" value="#000000">
+                        </div>
+                        <div class="form-group">
+                            <label for="borderRadius">Redondeo Esquinas (px)</label>
+                            <input type="number" id="borderRadius" min="0" max="50" step="5" value="15">
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 1rem;">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="displayValue" checked>
+                            <label for="displayValue" style="margin: 0;">Mostrar valor del código</label>
+                        </div>
+                    </div>
+
+                    <div class="form-grid" style="margin-top: 1rem;">
+                        <div class="form-group">
+                            <label for="textTop">Texto Superior</label>
+                            <input type="text" id="textTop" placeholder="Ej: Mi Empresa">
+                        </div>
+                        <div class="form-group">
+                            <label for="textBottom">Texto Inferior</label>
+                            <input type="text" id="textBottom" placeholder="Ej: www.miempresa.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="textSize">Tamaño Texto Extra</label>
+                            <input type="number" id="textSize" min="8" max="24" step="1" value="12">
+                        </div>
+                    </div>
+
+                    <div class="preview-box">
+                        <p style="font-size: 0.875rem; color: #6B7280; margin-bottom: 1rem;">Vista Previa:</p>
+                        <canvas id="previewCanvas"></canvas>
+                    </div>
+
+                    <button id="applyCustomization" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+                        Aplicar Personalización a Todos
+                    </button>
+                </div>
             </div>
 
             <div style="margin-bottom: 1.5rem;">
@@ -437,7 +618,23 @@
         let codes = [];
         let barcodeType = 'CODE128';
         let currentPage = 1;
-        const codesPerPage = 12; // Códigos por página
+        const codesPerPage = 12;
+        
+        let customization = {
+            width: 2,
+            height: 100,
+            displayValue: true,
+            fontSize: 14,
+            margin: 10,
+            background: '#ffffff',
+            lineColor: '#000000',
+            textTop: '',
+            textBottom: '',
+            textSize: 12,
+            borderWidth: 0,
+            borderColor: '#000000',
+            borderRadius: 15
+        };
 
         const fileInput = document.getElementById('fileInput');
         const manualCodeInput = document.getElementById('manualCode');
@@ -450,7 +647,6 @@
         const downloadAllBtn = document.getElementById('downloadAllBtn');
         const clearAllBtn = document.getElementById('clearAllBtn');
         
-        // Elementos de paginación
         const firstPageBtn = document.getElementById('firstPageBtn');
         const prevPageBtn = document.getElementById('prevPageBtn');
         const nextPageBtn = document.getElementById('nextPageBtn');
@@ -458,33 +654,343 @@
         const currentPageNum = document.getElementById('currentPageNum');
         const totalPagesEl = document.getElementById('totalPages');
         const paginationControls = document.getElementById('paginationControls');
+        
+        const customizationToggle = document.getElementById('customizationToggle');
+        const customizationContent = document.getElementById('customizationContent');
+        const previewCanvas = document.getElementById('previewCanvas');
+        const applyCustomizationBtn = document.getElementById('applyCustomization');
+        
+        const barcodeWidthInput = document.getElementById('barcodeWidth');
+        const barcodeHeightInput = document.getElementById('barcodeHeight');
+        const fontSizeInput = document.getElementById('fontSize');
+        const marginInput = document.getElementById('margin');
+        const bgColorInput = document.getElementById('bgColor');
+        const lineColorInput = document.getElementById('lineColor');
+        const displayValueInput = document.getElementById('displayValue');
+        const textTopInput = document.getElementById('textTop');
+        const textBottomInput = document.getElementById('textBottom');
+        const textSizeInput = document.getElementById('textSize');
+        const borderWidthInput = document.getElementById('borderWidth');
+        const borderColorInput = document.getElementById('borderColor');
+        const borderRadiusInput = document.getElementById('borderRadius');
 
-        // Cambiar tipo de código de barras
-        barcodeTypeSelect.addEventListener('change', (e) => {
+        function isValidForFormat(value, format) {
+            const cleanValue = value.replace(/\s/g, '');
+            
+            switch(format) {
+                case 'EAN13':
+                    return /^\d{13}$/.test(cleanValue);
+                case 'UPC':
+                    return /^\d{12}$/.test(cleanValue);
+                case 'ITF14':
+                    return /^\d{14}$/.test(cleanValue);
+                case 'CODE39':
+                    return /^[A-Z0-9\-. $/+%]+$/i.test(cleanValue);
+                case 'CODE128':
+                default:
+                    return cleanValue.length > 0;
+            }
+        }
+
+        function getValidationMessage(format) {
+            const messages = {
+                'EAN13': 'requiere exactamente 13 dígitos',
+                'UPC': 'requiere exactamente 12 dígitos',
+                'ITF14': 'requiere exactamente 14 dígitos',
+                'CODE39': 'solo acepta letras, números y estos símbolos: -. $/+%',
+                'CODE128': 'acepta cualquier texto'
+            };
+            return messages[format] || '';
+        }
+
+        function updateFormatInfo() {
+            const formatInfo = document.getElementById('formatInfo');
+            const messages = {
+                'CODE128': '💡 CODE128 acepta cualquier texto o números',
+                'EAN13': '⚠️ Solo acepta códigos con exactamente 13 dígitos',
+                'UPC': '⚠️ Solo acepta códigos con exactamente 12 dígitos',
+                'CODE39': '💡 Acepta letras, números y símbolos: -. $/+%',
+                'ITF14': '⚠️ Solo acepta códigos con exactamente 14 dígitos'
+            };
+            formatInfo.textContent = messages[barcodeType] || '';
+        }
+
+        function generateBarcodeWithCustomization(canvas, value, options) {
+            const ctx = canvas.getContext('2d');
+            
+            // Calcular espacio necesario para textos extra
+            let extraHeight = 0;
+            if (options.textTop) extraHeight += options.textSize + 15;
+            if (options.textBottom) extraHeight += options.textSize + 15;
+            
+            // Crear canvas temporal para generar el código de barras primero
+            const tempCanvas = document.createElement('canvas');
+            try {
+                JsBarcode(tempCanvas, value, {
+                    format: barcodeType,
+                    width: options.width,
+                    height: options.height,
+                    displayValue: options.displayValue,
+                    fontSize: options.fontSize,
+                    margin: 0,
+                    background: options.background,
+                    lineColor: options.lineColor
+                });
+            } catch (error) {
+                console.error('Error generando código de barras:', error);
+                throw error;
+            }
+            
+            // Validar que el canvas temporal se generó correctamente
+            if (tempCanvas.width === 0 || tempCanvas.height === 0) {
+                throw new Error('El código de barras no se pudo generar correctamente');
+            }
+            
+            // Calcular dimensiones del canvas final con márgenes y contorno
+            const totalMargin = options.margin + options.borderWidth;
+            canvas.width = tempCanvas.width + (totalMargin * 2);
+            canvas.height = tempCanvas.height + extraHeight + (totalMargin * 2);
+            
+            // Dibujar fondo con esquinas redondeadas
+            ctx.fillStyle = options.background;
+            roundRect(ctx, 0, 0, canvas.width, canvas.height, options.borderRadius);
+            ctx.fill();
+            
+            // Dibujar contorno con esquinas redondeadas si está habilitado
+            if (options.borderWidth > 0) {
+                ctx.strokeStyle = options.borderColor;
+                ctx.lineWidth = options.borderWidth;
+                const offset = options.borderWidth / 2;
+                roundRect(
+                    ctx,
+                    offset,
+                    offset,
+                    canvas.width - options.borderWidth,
+                    canvas.height - options.borderWidth,
+                    Math.max(0, options.borderRadius - offset)
+                );
+                ctx.stroke();
+            }
+            
+            let yOffset = totalMargin;
+            
+            // Texto superior
+            if (options.textTop) {
+                ctx.fillStyle = options.lineColor;
+                ctx.font = 'bold ' + options.textSize + 'px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(options.textTop, canvas.width / 2, yOffset + options.textSize);
+                yOffset += options.textSize + 15;
+            }
+            
+            // Dibujar el código de barras centrado
+            const x = (canvas.width - tempCanvas.width) / 2;
+            ctx.drawImage(tempCanvas, x, yOffset);
+            yOffset += tempCanvas.height;
+            
+            // Texto inferior
+            if (options.textBottom) {
+                yOffset += 10;
+                ctx.fillStyle = options.lineColor;
+                ctx.font = options.textSize + 'px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(options.textBottom, canvas.width / 2, yOffset + options.textSize);
+            }
+        }
+
+        // Función auxiliar para dibujar rectángulos con esquinas redondeadas
+        function roundRect(ctx, x, y, width, height, radius) {
+            if (width < 2 * radius) radius = width / 2;
+            if (height < 2 * radius) radius = height / 2;
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.arcTo(x + width, y, x + width, y + height, radius);
+            ctx.arcTo(x + width, y + height, x, y + height, radius);
+            ctx.arcTo(x, y + height, x, y, radius);
+            ctx.arcTo(x, y, x + width, y, radius);
+            ctx.closePath();
+        }
+
+        function updatePreview() {
+            if (!previewCanvas) return;
+            
+            customization.width = parseFloat(barcodeWidthInput.value);
+            customization.height = parseInt(barcodeHeightInput.value);
+            customization.fontSize = parseInt(fontSizeInput.value);
+            customization.margin = parseInt(marginInput.value);
+            customization.background = bgColorInput.value;
+            customization.lineColor = lineColorInput.value;
+            customization.displayValue = displayValueInput.checked;
+            customization.textTop = textTopInput.value;
+            customization.textBottom = textBottomInput.value;
+            customization.textSize = parseInt(textSizeInput.value);
+            customization.borderWidth = parseInt(borderWidthInput.value);
+            customization.borderColor = borderColorInput.value;
+            customization.borderRadius = parseInt(borderRadiusInput.value);
+            
+            try {
+                generateBarcodeWithCustomization(previewCanvas, '1234567890', customization);
+            } catch (error) {
+                console.error('Error en preview:', error);
+            }
+        }
+
+        function addManualCode() {
+            const value = manualCodeInput.value.trim();
+            if (value) {
+                const cleanValue = value.replace(/\s/g, '');
+                
+                if (!isValidForFormat(cleanValue, barcodeType)) {
+                    alert('❌ Código inválido para ' + barcodeType + '\n\nEl código "' + value + '" ' + getValidationMessage(barcodeType) + '.');
+                    return;
+                }
+                
+                codes.push({
+                    id: Date.now(),
+                    value: cleanValue,
+                    original: value
+                });
+                manualCodeInput.value = '';
+                
+                currentPage = Math.ceil(codes.length / codesPerPage);
+                renderBarcodes();
+            }
+        }
+
+        function deleteCode(id) {
+            codes = codes.filter(function(code) {
+                return code.id !== id;
+            });
+            
+            const totalPages = Math.ceil(codes.length / codesPerPage);
+            if (currentPage > totalPages && totalPages > 0) {
+                currentPage = totalPages;
+            }
+            
+            renderBarcodes();
+        }
+
+        function downloadBarcode(canvas, codeValue) {
+            const url = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = 'barcode_' + codeValue + '.png';
+            link.href = url;
+            link.click();
+        }
+
+        function renderBarcodes() {
+            if (codes.length === 0) {
+                resultsSection.classList.remove('show');
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            resultsSection.classList.add('show');
+            emptyState.style.display = 'none';
+            codeCount.textContent = codes.length;
+
+            const totalPages = Math.ceil(codes.length / codesPerPage);
+            const startIndex = (currentPage - 1) * codesPerPage;
+            const endIndex = startIndex + codesPerPage;
+            const currentCodes = codes.slice(startIndex, endIndex);
+
+            currentPageNum.textContent = currentPage;
+            totalPagesEl.textContent = totalPages;
+
+            firstPageBtn.disabled = currentPage === 1;
+            prevPageBtn.disabled = currentPage === 1;
+            nextPageBtn.disabled = currentPage === totalPages;
+            lastPageBtn.disabled = currentPage === totalPages;
+
+            if (codes.length <= codesPerPage) {
+                paginationControls.style.display = 'none';
+            } else {
+                paginationControls.style.display = 'flex';
+            }
+
+            barcodeGrid.innerHTML = '';
+
+            currentCodes.forEach(function(code, index) {
+                const globalIndex = startIndex + index;
+                
+                const card = document.createElement('div');
+                card.className = 'barcode-card';
+                
+                let displayInfo = '<span class="barcode-code">' + code.value + '</span>';
+                if (code.original && code.original !== code.value) {
+                    displayInfo = '<div><span class="barcode-code">' + code.value + '</span><div style="font-size: 0.75rem; color: #6B7280; margin-top: 0.25rem;">Original: ' + code.original + '</div></div>';
+                }
+                
+                card.innerHTML = '<div class="barcode-header">' + displayInfo + '<button class="btn-icon" onclick="deleteCode(' + code.id + ')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div><div class="barcode-container"><canvas id="canvas-' + code.id + '"></canvas></div><button class="btn btn-primary btn-small" style="width: 100%" onclick="downloadBarcode(document.getElementById(\'canvas-' + code.id + '\'), \'' + code.value + '\')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>Descargar</button>';
+                barcodeGrid.appendChild(card);
+
+                setTimeout(function() {
+                    const canvas = document.getElementById('canvas-' + code.id);
+                    if (canvas) {
+                        try {
+                            generateBarcodeWithCustomization(canvas, code.value, customization);
+                        } catch (error) {
+                            console.error('Error generando código de barras para ' + code.value + ':', error);
+                            canvas.parentElement.innerHTML = '<p style="color: #EF4444; text-align: center; padding: 20px; font-size: 0.875rem;">Error al generar código</p>';
+                        }
+                    }
+                }, 10);
+            });
+
+            if (currentPage > 1) {
+                resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        customizationToggle.addEventListener('click', function() {
+            customizationContent.classList.toggle('show');
+            const arrow = customizationToggle.querySelector('.arrow-icon');
+            arrow.classList.toggle('rotated');
+        });
+
+        barcodeWidthInput.addEventListener('input', updatePreview);
+        barcodeHeightInput.addEventListener('input', updatePreview);
+        fontSizeInput.addEventListener('input', updatePreview);
+        marginInput.addEventListener('input', updatePreview);
+        bgColorInput.addEventListener('input', updatePreview);
+        lineColorInput.addEventListener('input', updatePreview);
+        displayValueInput.addEventListener('change', updatePreview);
+        textTopInput.addEventListener('input', updatePreview);
+        textBottomInput.addEventListener('input', updatePreview);
+        textSizeInput.addEventListener('input', updatePreview);
+        borderWidthInput.addEventListener('input', updatePreview);
+        borderColorInput.addEventListener('input', updatePreview);
+        borderRadiusInput.addEventListener('input', updatePreview);
+
+        applyCustomizationBtn.addEventListener('click', function() {
+            updatePreview();
+            renderBarcodes();
+            alert('✅ Personalización aplicada a todos los códigos de barras');
+        });
+
+        barcodeTypeSelect.addEventListener('change', function(e) {
             const oldType = barcodeType;
             barcodeType = e.target.value;
             updateFormatInfo();
+            updatePreview();
             
-            // Verificar cuántos códigos actuales son válidos para el nuevo formato
             if (codes.length > 0) {
-                const validCodes = codes.filter(code => isValidForFormat(code.value, barcodeType));
+                const validCodes = codes.filter(function(code) {
+                    return isValidForFormat(code.value, barcodeType);
+                });
                 const invalidCount = codes.length - validCodes.length;
                 
                 if (invalidCount > 0) {
-                    const mensaje = `⚠️ Cambio de formato: ${oldType} → ${barcodeType}\n\n` +
-                                  `${invalidCount} de ${codes.length} códigos no son válidos para ${barcodeType}.\n\n` +
-                                  `Estos códigos NO se mostrarán ni se incluirán en las descargas.\n\n` +
-                                  `¿Deseas continuar?`;
+                    const mensaje = '⚠️ Cambio de formato: ' + oldType + ' → ' + barcodeType + '\n\n' + invalidCount + ' de ' + codes.length + ' códigos no son válidos.\n\n¿Continuar?';
                     
                     if (!confirm(mensaje)) {
-                        // Revertir el cambio
                         barcodeType = oldType;
                         barcodeTypeSelect.value = oldType;
                         updateFormatInfo();
+                        updatePreview();
                         return;
                     }
                     
-                    // Filtrar solo los códigos válidos
                     codes = validCodes;
                     currentPage = 1;
                 }
@@ -493,26 +999,16 @@
             renderBarcodes();
         });
 
-        // Actualizar información del formato
-        function updateFormatInfo() {
-            const formatInfo = document.getElementById('formatInfo');
-            const messages = {
-                'CODE128': '💡 CODE128 acepta cualquier texto o números',
-                'EAN13': '⚠️ Solo acepta códigos con exactamente 13 dígitos (ej: 1234567890123)',
-                'UPC': '⚠️ Solo acepta códigos con exactamente 12 dígitos (ej: 123456789012)',
-                'CODE39': '💡 Acepta letras, números y símbolos: -. $/+%',
-                'ITF14': '⚠️ Solo acepta códigos con exactamente 14 dígitos (ej: 12345678901234)'
-            };
-            formatInfo.textContent = messages[barcodeType] || '';
-        }
+        addBtn.addEventListener('click', addManualCode);
+        manualCodeInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') addManualCode();
+        });
 
-        // Subir archivo Excel o TXT
-        fileInput.addEventListener('change', async (e) => {
+        fileInput.addEventListener('change', async function(e) {
             const file = e.target.files[0];
             if (!file) return;
 
-            // Mostrar mensaje de carga
-            emptyState.innerHTML = '<p class="empty-state-title" style="color: #3B82F6;">⏳ Cargando archivo... Por favor espera</p>';
+            emptyState.innerHTML = '<p class="empty-state-title" style="color: #3B82F6;">⏳ Cargando archivo...</p>';
             emptyState.style.display = 'block';
 
             try {
@@ -521,16 +1017,11 @@
                 const newCodes = [];
                 const invalidCodes = [];
 
-                // Detectar tipo de archivo
                 if (fileName.endsWith('.txt')) {
-                    // Procesar archivo TXT
-                    console.log('Procesando archivo de texto...');
                     const text = await file.text();
                     const lines = text.split(/\r?\n/);
                     
-                    console.log('Líneas encontradas:', lines.length);
-                    
-                    lines.forEach(line => {
+                    lines.forEach(function(line) {
                         const trimmedLine = line.trim();
                         if (trimmedLine !== '') {
                             const cleanValue = trimmedLine.replace(/\s/g, '');
@@ -548,19 +1039,12 @@
                     });
                     
                 } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
-                    // Procesar archivo Excel
-                    console.log('Procesando archivo Excel...');
                     const data = await file.arrayBuffer();
-                    
                     const workbook = XLSX.read(data);
-                    console.log('Hojas disponibles:', workbook.SheetNames);
-                    
                     const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                     const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
                     
-                    console.log('Filas encontradas:', jsonData.length);
-                    
-                    jsonData.flat().forEach(code => {
+                    jsonData.flat().forEach(function(code) {
                         if (code !== null && code !== undefined && code !== '') {
                             const original = String(code).trim();
                             const cleanValue = original.replace(/\s/g, '');
@@ -577,153 +1061,53 @@
                         }
                     });
                 } else {
-                    throw new Error('Formato de archivo no soportado. Use .xlsx, .xls o .txt');
+                    throw new Error('Formato no soportado');
                 }
 
-                console.log('Códigos válidos:', newCodes.length);
-                console.log('Códigos inválidos:', invalidCodes.length);
-
                 if (newCodes.length === 0 && invalidCodes.length === 0) {
-                    emptyState.innerHTML = `
-                        <p class="empty-state-title" style="color: #EF4444;">❌ No se encontraron códigos</p>
-                        <p class="empty-state-text">Asegúrate de que el archivo contenga datos</p>
-                    `;
-                    alert('No se encontraron códigos en el archivo.');
+                    alert('No se encontraron códigos');
                 } else if (newCodes.length === 0 && invalidCodes.length > 0) {
-                    emptyState.innerHTML = `
-                        <p class="empty-state-title" style="color: #EF4444;">❌ Ningún código es válido</p>
-                        <p class="empty-state-text">Todos los códigos en el archivo son inválidos para ${barcodeType}</p>
-                    `;
-                    alert(`❌ Ningún código es válido para ${barcodeType}\n\nSe encontraron ${invalidCodes.length} códigos pero ninguno cumple con los requisitos.\n\n${barcodeType} ${getValidationMessage(barcodeType)}.`);
+                    alert('❌ Ningún código válido para ' + barcodeType);
                 } else {
                     codes.push(...newCodes);
                     currentPage = 1;
                     
-                    let mensaje = `✅ Se cargaron ${newCodes.length} códigos exitosamente!`;
+                    let mensaje = '✅ Se cargaron ' + newCodes.length + ' códigos';
                     if (invalidCodes.length > 0) {
-                        mensaje += `\n\n⚠️ Se omitieron ${invalidCodes.length} códigos inválidos para ${barcodeType}.`;
-                        console.warn('Códigos omitidos:', invalidCodes);
+                        mensaje += '\n\n⚠️ Se omitieron ' + invalidCodes.length + ' inválidos';
                     }
                     alert(mensaje);
                     renderBarcodes();
                 }
             } catch (error) {
-                console.error('Error completo:', error);
-                emptyState.innerHTML = `
-                    <p class="empty-state-title" style="color: #EF4444;">❌ Error al cargar el archivo</p>
-                    <p class="empty-state-text">${error.message}</p>
-                `;
-                alert('Error al leer el archivo: ' + error.message + '\n\nAsegúrate de que sea un archivo válido (.xlsx, .xls o .txt).');
+                console.error('Error:', error);
+                alert('Error al leer archivo');
             }
             
             e.target.value = '';
         });
 
-        // Validar si un código es válido para el formato sin modificarlo
-        function isValidForFormat(value, format) {
-            const cleanValue = value.replace(/\s/g, '');
-            
-            switch(format) {
-                case 'EAN13':
-                    // Debe tener exactamente 13 dígitos
-                    return /^\d{13}$/.test(cleanValue);
-                    
-                case 'UPC':
-                    // Debe tener 12 dígitos (UPC-A)
-                    return /^\d{12}$/.test(cleanValue);
-                    
-                case 'ITF14':
-                    // Debe tener exactamente 14 dígitos
-                    return /^\d{14}$/.test(cleanValue);
-                    
-                case 'CODE39':
-                    // Acepta A-Z, 0-9 y algunos símbolos: -. $/+%
-                    return /^[A-Z0-9\-. $/+%]+$/i.test(cleanValue);
-                    
-                case 'CODE128':
-                default:
-                    // CODE128 acepta cualquier carácter ASCII
-                    return cleanValue.length > 0;
-            }
-        }
-
-        // Obtener mensaje de error específico
-        function getValidationMessage(format) {
-            const messages = {
-                'EAN13': 'requiere exactamente 13 dígitos',
-                'UPC': 'requiere exactamente 12 dígitos',
-                'ITF14': 'requiere exactamente 14 dígitos',
-                'CODE39': 'solo acepta letras, números y estos símbolos: -. $/+%',
-                'CODE128': 'acepta cualquier texto'
-            };
-            return messages[format] || '';
-        }
-
-        // Agregar código manual
-        function addManualCode() {
-            const value = manualCodeInput.value.trim();
-            if (value) {
-                const cleanValue = value.replace(/\s/g, '');
-                
-                if (!isValidForFormat(cleanValue, barcodeType)) {
-                    alert(`❌ Código inválido para ${barcodeType}\n\nEl código "${value}" ${getValidationMessage(barcodeType)}.`);
-                    return;
-                }
-                
-                codes.push({
-                    id: Date.now(),
-                    value: cleanValue,
-                    original: value
-                });
-                manualCodeInput.value = '';
-                
-                // Ir a la última página donde está el nuevo código
-                currentPage = Math.ceil(codes.length / codesPerPage);
-                renderBarcodes();
-            }
-        }
-
-        addBtn.addEventListener('click', addManualCode);
-        manualCodeInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') addManualCode();
-        });
-
-        // Eliminar código
-        function deleteCode(id) {
-            codes = codes.filter(code => code.id !== id);
-            
-            // Ajustar página si es necesario
-            const totalPages = Math.ceil(codes.length / codesPerPage);
-            if (currentPage > totalPages && totalPages > 0) {
-                currentPage = totalPages;
-            }
-            
-            renderBarcodes();
-        }
-
-        // Limpiar todos
-        clearAllBtn.addEventListener('click', () => {
-            if (confirm('¿Estás seguro de que deseas eliminar todos los códigos?')) {
+        clearAllBtn.addEventListener('click', function() {
+            if (confirm('¿Eliminar todos los códigos?')) {
                 codes = [];
                 currentPage = 1;
                 renderBarcodes();
             }
         });
 
-        // Controles de paginación
-        firstPageBtn.addEventListener('click', () => {
+        firstPageBtn.addEventListener('click', function() {
             currentPage = 1;
             renderBarcodes();
         });
 
-        prevPageBtn.addEventListener('click', () => {
+        prevPageBtn.addEventListener('click', function() {
             if (currentPage > 1) {
                 currentPage--;
                 renderBarcodes();
             }
         });
 
-        nextPageBtn.addEventListener('click', () => {
+        nextPageBtn.addEventListener('click', function() {
             const totalPages = Math.ceil(codes.length / codesPerPage);
             if (currentPage < totalPages) {
                 currentPage++;
@@ -731,71 +1115,45 @@
             }
         });
 
-        lastPageBtn.addEventListener('click', () => {
+        lastPageBtn.addEventListener('click', function() {
             currentPage = Math.ceil(codes.length / codesPerPage);
             renderBarcodes();
         });
 
-        // Descargar código individual
-        function downloadBarcode(canvas, codeValue) {
-            const url = canvas.toDataURL('image/png');
-            const link = document.createElement('a');
-            link.download = `barcode_${codeValue}.png`;
-            link.href = url;
-            link.click();
-        }
-
-        // Descargar todos en ZIP
-        downloadAllBtn.addEventListener('click', async () => {
+        downloadAllBtn.addEventListener('click', async function() {
             if (codes.length === 0) return;
             
-            const confirmed = confirm(`¿Descargar todos los ${codes.length} códigos de barras en un archivo ZIP?`);
-            if (!confirmed) return;
+            if (!confirm('¿Descargar ' + codes.length + ' códigos en ZIP?')) return;
             
-            // Cambiar texto del botón
             const originalText = downloadAllBtn.innerHTML;
-            downloadAllBtn.innerHTML = '<span style="display: flex; align-items: center; gap: 0.5rem;">⏳ Generando ZIP...</span>';
+            downloadAllBtn.innerHTML = '<span>⏳ Generando...</span>';
             downloadAllBtn.disabled = true;
             
             try {
-                // Crear instancia de JSZip
                 const zip = new JSZip();
                 const tempCanvas = document.createElement('canvas');
                 
-                // Generar todos los códigos de barras y agregarlos al ZIP
                 for (let i = 0; i < codes.length; i++) {
                     const code = codes[i];
                     
                     try {
-                        // Generar código de barras
-                        JsBarcode(tempCanvas, code.value, {
-                            format: barcodeType,
-                            width: 2,
-                            height: 100,
-                            displayValue: true,
-                            fontSize: 14,
-                            margin: 10
-                        });
+                        generateBarcodeWithCustomization(tempCanvas, code.value, customization);
                         
-                        // Convertir canvas a blob
                         const dataUrl = tempCanvas.toDataURL('image/png');
                         const base64Data = dataUrl.split(',')[1];
                         
-                        // Agregar al ZIP con nombre único
-                        const fileName = `barcode_${code.value}.png`;
+                        const fileName = 'barcode_' + code.value + '.png';
                         zip.file(fileName, base64Data, { base64: true });
                         
-                        // Actualizar progreso
                         if (i % 10 === 0 || i === codes.length - 1) {
-                            downloadAllBtn.innerHTML = `<span style="display: flex; align-items: center; gap: 0.5rem;">⏳ Generando... ${i + 1}/${codes.length}</span>`;
+                            downloadAllBtn.innerHTML = '<span>⏳ ' + (i + 1) + '/' + codes.length + '</span>';
                         }
                     } catch (error) {
-                        console.error(`Error generando código ${code.value}:`, error);
+                        console.error('Error:', error);
                     }
                 }
                 
-                // Generar y descargar el ZIP
-                downloadAllBtn.innerHTML = '<span style="display: flex; align-items: center; gap: 0.5rem;">📦 Creando archivo ZIP...</span>';
+                downloadAllBtn.innerHTML = '<span>📦 Creando ZIP...</span>';
                 
                 const zipBlob = await zip.generateAsync({ 
                     type: 'blob',
@@ -803,138 +1161,32 @@
                     compressionOptions: { level: 6 }
                 });
                 
-                // Crear nombre del archivo con fecha
                 const fecha = new Date().toISOString().slice(0, 10);
-                const nombreZip = `codigos_barras_${fecha}.zip`;
+                const nombreZip = 'codigos_barras_' + fecha + '.zip';
                 
-                // Descargar el ZIP
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(zipBlob);
                 link.download = nombreZip;
                 link.click();
                 
-                // Limpiar
                 URL.revokeObjectURL(link.href);
                 
-                alert(`✅ Se descargaron ${codes.length} códigos de barras en ${nombreZip}`);
+                alert('✅ Descargados ' + codes.length + ' códigos en ' + nombreZip);
                 
             } catch (error) {
-                console.error('Error al crear ZIP:', error);
-                alert('Error al crear el archivo ZIP: ' + error.message);
+                console.error('Error:', error);
+                alert('Error al crear ZIP');
             } finally {
-                // Restaurar botón
                 downloadAllBtn.innerHTML = originalText;
                 downloadAllBtn.disabled = false;
             }
         });
 
-        // Renderizar códigos de barras
-        function renderBarcodes() {
-            if (codes.length === 0) {
-                resultsSection.classList.remove('show');
-                emptyState.style.display = 'block';
-                return;
-            }
-
-            resultsSection.classList.add('show');
-            emptyState.style.display = 'none';
-            codeCount.textContent = codes.length;
-
-            // Calcular paginación
-            const totalPages = Math.ceil(codes.length / codesPerPage);
-            const startIndex = (currentPage - 1) * codesPerPage;
-            const endIndex = startIndex + codesPerPage;
-            const currentCodes = codes.slice(startIndex, endIndex);
-
-            // Actualizar información de paginación
-            currentPageNum.textContent = currentPage;
-            totalPagesEl.textContent = totalPages;
-
-            // Habilitar/deshabilitar botones
-            firstPageBtn.disabled = currentPage === 1;
-            prevPageBtn.disabled = currentPage === 1;
-            nextPageBtn.disabled = currentPage === totalPages;
-            lastPageBtn.disabled = currentPage === totalPages;
-
-            // Mostrar/ocultar controles de paginación
-            if (codes.length <= codesPerPage) {
-                paginationControls.style.display = 'none';
-            } else {
-                paginationControls.style.display = 'flex';
-            }
-
-            barcodeGrid.innerHTML = '';
-
-            currentCodes.forEach((code, index) => {
-                const globalIndex = startIndex + index;
-                
-                const card = document.createElement('div');
-                card.className = 'barcode-card';
-                
-                let displayInfo = `<span class="barcode-code">${code.value}</span>`;
-                if (code.original && code.original !== code.value) {
-                    displayInfo = `
-                        <div>
-                            <span class="barcode-code">${code.value}</span>
-                            <div style="font-size: 0.75rem; color: #6B7280; margin-top: 0.25rem;">Original: ${code.original}</div>
-                        </div>
-                    `;
-                }
-                
-                card.innerHTML = `
-                    <div class="barcode-header">
-                        ${displayInfo}
-                        <button class="btn-icon" onclick="deleteCode(${code.id})">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                            </svg>
-                        </button>
-                    </div>
-                    <div class="barcode-container">
-                        <canvas id="canvas-${code.id}"></canvas>
-                    </div>
-                    <button class="btn btn-primary btn-small" style="width: 100%" onclick="downloadBarcode(document.getElementById('canvas-${code.id}'), '${code.value}')">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
-                        </svg>
-                        Descargar
-                    </button>
-                `;
-                barcodeGrid.appendChild(card);
-
-                // Generar código de barras
-                setTimeout(() => {
-                    const canvas = document.getElementById(`canvas-${code.id}`);
-                    if (canvas) {
-                        try {
-                            JsBarcode(canvas, code.value, {
-                                format: barcodeType,
-                                width: 2,
-                                height: 100,
-                                displayValue: true,
-                                fontSize: 14,
-                                margin: 10
-                            });
-                        } catch (error) {
-                            console.error(`Error generando código de barras para ${code.value}:`, error);
-                            canvas.parentElement.innerHTML = `<p style="color: #EF4444; text-align: center; padding: 20px; font-size: 0.875rem;">Error al generar código</p>`;
-                        }
-                    }
-                }, 10);
-            });
-
-            // Scroll al inicio de la página de resultados
-            if (currentPage > 1) {
-                resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        }
-
-        // Hacer funciones globales
         window.deleteCode = deleteCode;
         window.downloadBarcode = downloadBarcode;
 
-        // Inicializar
         updateFormatInfo();
+        updatePreview();
     </script>
 </body>
 </html>
