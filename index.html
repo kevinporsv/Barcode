@@ -1260,6 +1260,19 @@
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>
                 Selecciona la columna que contiene los códigos de barras
             </div>
+
+            <!-- HEADER TOGGLE -->
+            <div id="headerToggleRow" style="display:flex;align-items:center;justify-content:space-between;padding:0.65rem 0.85rem;background:var(--surface3);border:1px solid var(--border);border-radius:8px;margin-bottom:0.85rem;">
+                <div>
+                    <div style="font-size:0.85rem;font-weight:600;color:var(--text);">¿La primera fila tiene encabezados?</div>
+                    <div style="font-size:0.72rem;color:var(--text3);font-family:var(--mono);margin-top:2px;" id="headerToggleHint">Activado — la fila 1 se usa como nombres de columna, no como datos</div>
+                </div>
+                <label class="toggle-switch" style="flex-shrink:0;margin-left:1rem;">
+                    <input type="checkbox" id="hasHeaderCheck" checked>
+                    <div class="toggle-track"></div>
+                </label>
+            </div>
+
             <div class="columns-grid" id="columnChips"></div>
             <div class="preview-table" id="previewTableWrap"></div>
             <div style="display: flex; gap: 0.75rem; margin-top: 0.75rem;">
@@ -1929,55 +1942,172 @@ function detectDelimiter(text) {
 
 function parseDelimited(text, delim) {
     const lines = text.split(/\r?\n/).filter(l => l.trim());
-    if (!lines.length) return { headers: [], rows: [] };
+    if (!lines.length) return { allRows: [], numCols: 0 };
     const split = l => l.split(delim).map(c => c.trim().replace(/^["']|["']$/g,''));
-    const firstRow = split(lines[0]);
-    // Check if first row looks like headers (non-numeric values)
-    const isHeader = firstRow.some(c => isNaN(c) && c.length > 0);
-    let headers, rows;
-    if (isHeader) {
-        headers = firstRow;
-        rows = lines.slice(1).map(split);
+    const allRows = lines.map(split);
+    const numCols = Math.max(...allRows.slice(0,10).map(r => r.length));
+    return { allRows, numCols };
+}
+
+// Build headers+rows from allRows depending on hasHeader setting
+function buildHeadersRows(allRows, hasHeader) {
+    if (!allRows.length) return { headers: [], rows: [] };
+    const numCols = Math.max(...allRows.slice(0,10).map(r => r.length));
+    if (hasHeader) {
+        const headers = allRows[0].map((h, i) => (h && h.trim()) ? h.trim() : 'Col. ' + (i+1));
+        const rows = allRows.slice(1);
+        return { headers, rows };
     } else {
-        headers = firstRow.map((_, i) => 'Columna ' + (i+1));
-        rows = lines.map(split);
+        const headers = Array.from({length: numCols}, (_, i) => 'Col. ' + (i+1));
+        const rows = allRows;
+        return { headers, rows };
     }
-    return { headers, rows };
 }
 
 // ─── COLUMN SELECTOR UI ───────────────────────────────────────────────────────
-function showColumnSelector(headers, rows, type) {
-    pendingFileData = { headers, rows, type };
+function showColumnSelector(allRows, type) {
+    pendingFileData = { allRows, type };
+    selectedColumnIndex = -1;
+    importColBtn.disabled = true;
+
+    // Auto-guess header: if first row has any non-numeric, non-empty cell → likely header
+    const firstRow = allRows[0] || [];
+    const looksLikeHeader = firstRow.some(c => {
+        const s = String(c).trim();
+        return s.length > 0 && isNaN(s) && !/^\d{2,}$/.test(s);
+    });
+    const hasHeaderCheck = document.getElementById('hasHeaderCheck');
+    hasHeaderCheck.checked = looksLikeHeader;
+    updateHeaderToggleHint(looksLikeHeader);
+
+    renderColumnSelectorUI(allRows, hasHeaderCheck.checked);
+    columnSelectorArea.classList.add('show');
+    columnSelectorArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function updateHeaderToggleHint(hasHeader) {
+    const hint = document.getElementById('headerToggleHint');
+    if (!hint) return;
+    if (hasHeader) {
+        hint.textContent = 'Activado — la fila 1 se usa como nombres de columna, no como datos';
+        hint.style.color = 'var(--accent2)';
+    } else {
+        hint.textContent = 'Desactivado — la fila 1 se importa como dato (no hay encabezados)';
+        hint.style.color = 'var(--warning)';
+    }
+}
+
+function renderColumnSelectorUI(allRows, hasHeader) {
+    const { headers, rows } = buildHeadersRows(allRows, hasHeader);
+    // Save derived headers+rows into pendingFileData for import
+    pendingFileData.headers = headers;
+    pendingFileData.rows = rows;
     selectedColumnIndex = -1;
     importColBtn.disabled = true;
 
     columnChips.innerHTML = '';
     headers.forEach((h, i) => {
-        const colValues = rows.slice(0,5).map(r => r[i] || '').filter(Boolean);
+        const sampleVals = rows.slice(0,3).map(r => r[i] || '').filter(Boolean).join(', ');
         const chip = document.createElement('button');
         chip.className = 'column-chip';
         chip.dataset.idx = i;
+        chip.title = sampleVals ? 'Ej: ' + sampleVals : '';
         chip.innerHTML = `${h} <span class="chip-count">${rows.length}</span>`;
         chip.addEventListener('click', () => selectColumn(i, headers, rows));
         columnChips.appendChild(chip);
     });
 
-    // Preview table
-    const maxPreviewRows = Math.min(5, rows.length);
+    // Preview table — show first row with special styling if it's a data row (no header)
+    const maxPreviewRows = Math.min(6, rows.length);
     let tableHtml = '<table><thead><tr>';
-    headers.forEach(h => { tableHtml += `<th>${h}</th>`; });
+    headers.forEach(h => { tableHtml += `<th>${escHtml(h)}</th>`; });
     tableHtml += '</tr></thead><tbody>';
     for (let i = 0; i < maxPreviewRows; i++) {
         tableHtml += '<tr>';
-        headers.forEach((_, j) => { tableHtml += `<td>${rows[i][j] !== undefined ? rows[i][j] : ''}</td>`; });
+        headers.forEach((_, j) => {
+            const val = rows[i] && rows[i][j] !== undefined ? rows[i][j] : '';
+            tableHtml += `<td>${escHtml(String(val))}</td>`;
+        });
         tableHtml += '</tr>';
+    }
+    if (rows.length > maxPreviewRows) {
+        tableHtml += `<tr><td colspan="${headers.length}" style="text-align:center;color:var(--text3);font-size:0.72rem;padding:0.5rem;">... ${rows.length - maxPreviewRows} filas más</td></tr>`;
+    }
+    tableHtml += '</tbody></table>';
+    previewTableWrap.innerHTML = tableHtml;
+}
+
+function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ─── SINGLE COLUMN CONFIRM (no multi-column selector needed) ─────────────────
+// Shows the column selector area with the header toggle but only 1 chip (Col. 1 or the header name)
+function showSingleColumnConfirm(allRows, type) {
+    pendingFileData = { allRows, type };
+    selectedColumnIndex = -1;
+    importColBtn.disabled = false; // only 1 col — auto-select
+
+    // Auto-guess header
+    const firstRow = allRows[0] || [];
+    const firstVal = String(firstRow[0] || '').trim();
+    const looksLikeHeader = firstVal.length > 0 && isNaN(firstVal) && !/^\d{2,}$/.test(firstVal);
+
+    const hasHeaderCheck = document.getElementById('hasHeaderCheck');
+    hasHeaderCheck.checked = looksLikeHeader;
+    updateHeaderToggleHint(looksLikeHeader);
+
+    // Pre-select column 0
+    selectedColumnIndex = 0;
+
+    renderSingleColumnUI(allRows, hasHeaderCheck.checked);
+    columnSelectorArea.classList.add('show');
+    columnSelectorArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderSingleColumnUI(allRows, hasHeader) {
+    const { headers, rows } = buildHeadersRows(allRows, hasHeader);
+    pendingFileData.headers = headers;
+    pendingFileData.rows = rows;
+
+    // Show one chip for the single column
+    columnChips.innerHTML = '';
+    const chip = document.createElement('button');
+    chip.className = 'column-chip selected';
+    chip.dataset.idx = 0;
+    const sampleVals = rows.slice(0, 3).map(r => r[0] || '').filter(Boolean).join(', ');
+    chip.innerHTML = `${escHtml(headers[0])} <span class="chip-count">${rows.length}</span>`;
+    chip.title = sampleVals ? 'Ej: ' + sampleVals : '';
+    chip.addEventListener('click', () => {}); // already selected
+    columnChips.appendChild(chip);
+
+    // Show preview
+    const maxPreviewRows = Math.min(8, rows.length);
+    let tableHtml = `<table><thead><tr><th>${escHtml(headers[0])}</th></tr></thead><tbody>`;
+    for (let i = 0; i < maxPreviewRows; i++) {
+        const val = rows[i] && rows[i][0] !== undefined ? rows[i][0] : '';
+        tableHtml += `<tr><td class="active-col">${escHtml(String(val))}</td></tr>`;
+    }
+    if (rows.length > maxPreviewRows) {
+        tableHtml += `<tr><td style="text-align:center;color:var(--text3);font-size:0.72rem;padding:0.5rem;">... ${rows.length - maxPreviewRows} filas más</td></tr>`;
     }
     tableHtml += '</tbody></table>';
     previewTableWrap.innerHTML = tableHtml;
 
-    columnSelectorArea.classList.add('show');
-    columnSelectorArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    importColBtn.disabled = false;
 }
+
+// Override header-toggle listener to also handle single-column case
+document.getElementById('hasHeaderCheck').addEventListener('change', function() {
+    updateHeaderToggleHint(this.checked);
+    if (!pendingFileData || !pendingFileData.allRows) return;
+    const isSingleCol = (pendingFileData.allRows[0] || []).length <= 1;
+    if (isSingleCol) {
+        renderSingleColumnUI(pendingFileData.allRows, this.checked);
+    } else {
+        renderColumnSelectorUI(pendingFileData.allRows, this.checked);
+    }
+});
 
 function selectColumn(idx, headers, rows) {
     selectedColumnIndex = idx;
@@ -2060,85 +2190,34 @@ fileInput.addEventListener('change', async function(e) {
             // Check if multiple columns
             const maxCols = Math.max(...jsonData.slice(0,5).map(r => r.length));
             if (maxCols > 1) {
-                const firstRow = jsonData[0].map(String);
-                const isHeader = firstRow.some(c => isNaN(c) && c.trim().length > 0);
-                let headers, rows;
-                if (isHeader) {
-                    headers = firstRow.map(h => h || '(vacío)');
-                    rows = jsonData.slice(1).map(r => r.map(String));
-                } else {
-                    headers = firstRow.map((_, i) => 'Col. ' + (i+1));
-                    rows = jsonData.map(r => r.map(String));
-                }
-                showColumnSelector(headers, rows, 'excel');
+                // Always show column selector — let user decide about headers
+                const allRows = jsonData.map(r => r.map(String));
+                showColumnSelector(allRows, 'excel');
             } else {
-                // Single column — import directly
-                const newCodes = [], invalidCodes = [];
-                let count = 0;
-                for (const row of jsonData) {
-                    if (count >= limit) break;
-                    const raw = row[0];
-                    if (raw !== null && raw !== undefined && raw !== '') {
-                        const original = String(raw).trim();
-                        const clean = original.replace(/\s/g,'');
-                        if (isValidForFormat(clean, barcodeType)) {
-                            newCodes.push({ id: Date.now() + Math.random(), value: clean, original });
-                            count++;
-                        } else invalidCodes.push(original);
-                    }
-                }
-                finishImport(newCodes, invalidCodes, jsonData.length);
+                // Single column — ask about header via a simple inline check
+                const allRows = jsonData.map(r => [String(r[0] || '')]);
+                showSingleColumnConfirm(allRows, 'excel');
             }
 
         } else if (fileName.endsWith('.txt') || fileName.endsWith('.csv')) {
             const text = await file.text();
-            const firstLine = text.split(/\r?\n/)[0] || '';
             const detectedDelim = detectDelimiter(text);
 
             if (detectedDelim) {
-                // Has delimiter — show selector
                 const parsed = parseDelimited(text, detectedDelim);
-                if (parsed.headers.length > 1) {
-                    // Show delimiter choice + column selector
+                if (parsed.numCols > 1) {
+                    // Multiple columns — show delimiter choice + column selector
                     delimiterArea.classList.add('show');
-                    // Store raw text for re-parsing with different delimiter
                     pendingFileData = { raw: text, detectedDelim };
-                    // Auto-show with detected delimiter
-                    showColumnSelector(parsed.headers, parsed.rows, 'delimited');
+                    showColumnSelector(parsed.allRows, 'delimited');
                 } else {
-                    // Single column delimited — import directly
-                    const newCodes = [], invalidCodes = [];
-                    let count = 0;
-                    for (const row of parsed.rows) {
-                        if (count >= limit) break;
-                        const raw = (row[0] || '').trim();
-                        if (raw) {
-                            const clean = raw.replace(/\s/g,'');
-                            if (isValidForFormat(clean, barcodeType)) {
-                                newCodes.push({ id: Date.now()+Math.random(), value: clean, original: raw });
-                                count++;
-                            } else invalidCodes.push(raw);
-                        }
-                    }
-                    finishImport(newCodes, invalidCodes, parsed.rows.length);
+                    // Single column delimited — ask about header
+                    showSingleColumnConfirm(parsed.allRows, 'delimited');
                 }
             } else {
-                // Simple TXT — one code per line
-                const lines = text.split(/\r?\n/);
-                const newCodes = [], invalidCodes = [];
-                let count = 0;
-                for (const line of lines) {
-                    if (count >= limit) break;
-                    const trimmed = line.trim();
-                    if (trimmed) {
-                        const clean = trimmed.replace(/\s/g,'');
-                        if (isValidForFormat(clean, barcodeType)) {
-                            newCodes.push({ id: Date.now()+Math.random(), value: clean, original: trimmed });
-                            count++;
-                        } else invalidCodes.push(trimmed);
-                    }
-                }
-                finishImport(newCodes, invalidCodes, lines.length);
+                // No delimiter detected — plain TXT one value per line
+                const allRows = text.split(/\r?\n/).filter(l => l.trim()).map(l => [l.trim()]);
+                showSingleColumnConfirm(allRows, 'txt');
             }
         }
     } catch(err) {
@@ -2156,7 +2235,11 @@ document.querySelectorAll('.btn-delim').forEach(btn => {
         let delim = this.dataset.delim;
         if (delim === 'auto') delim = detectDelimiter(pendingFileData.raw) || ',';
         const parsed = parseDelimited(pendingFileData.raw, delim);
-        showColumnSelector(parsed.headers, parsed.rows, 'delimited');
+        if (parsed.numCols > 1) {
+            showColumnSelector(parsed.allRows, 'delimited');
+        } else {
+            showSingleColumnConfirm(parsed.allRows, 'delimited');
+        }
     });
 });
 
