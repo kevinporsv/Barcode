@@ -3,1190 +3,2626 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generador de Códigos de Barras</title>
+    <title>Generador de Códigos de Barras Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.5/JsBarcode.all.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --bg: #0f0f11;
+            --surface: #18181c;
+            --surface2: #222228;
+            --surface3: #2a2a32;
+            --border: #2e2e38;
+            --border-accent: #3d3d50;
+            --accent: #6c63ff;
+            --accent2: #00e5b0;
+            --accent3: #ff6b6b;
+            --text: #e8e8f0;
+            --text2: #9090a8;
+            --text3: #5a5a70;
+            --success: #00e5b0;
+            --danger: #ff4f4f;
+            --warning: #ffb347;
+            --radius: 10px;
+            --mono: 'IBM Plex Mono', monospace;
+            --sans: 'DM Sans', sans-serif;
         }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #EFF6FF 0%, #E0E7FF 100%);
+            font-family: var(--sans);
+            background: var(--bg);
+            color: var(--text);
             min-height: 100vh;
-            padding: 2rem;
+            padding: 2rem 1.5rem;
+            background-image: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(108,99,255,0.12) 0%, transparent 70%);
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
+        .container { max-width: 1100px; margin: 0 auto; }
 
-        .card {
-            background: white;
-            border-radius: 1rem;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-            padding: 2rem;
-        }
-
-        h1 {
-            font-size: 2.5rem;
-            font-weight: bold;
-            color: #1F2937;
+        /* HEADER */
+        .header {
             text-align: center;
+            margin-bottom: 2.5rem;
+        }
+        .header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: rgba(108,99,255,0.15);
+            border: 1px solid rgba(108,99,255,0.35);
+            color: var(--accent);
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            padding: 0.3rem 0.9rem;
+            border-radius: 100px;
+            margin-bottom: 1rem;
+        }
+        .header h1 {
+            font-size: 2.4rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            color: var(--text);
             margin-bottom: 0.5rem;
         }
+        .header h1 span { color: var(--accent); }
+        .header p { color: var(--text2); font-size: 0.95rem; }
 
-        .subtitle {
-            color: #6B7280;
-            text-align: center;
-            margin-bottom: 2rem;
+        /* FORMAT BADGES */
+        .format-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            justify-content: center;
+            margin-top: 1rem;
         }
+        .format-badge {
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 4px;
+            border: 1px solid var(--border-accent);
+            background: var(--surface2);
+            color: var(--text2);
+        }
+        .format-badge.highlight { border-color: rgba(0,229,176,0.4); color: var(--accent2); background: rgba(0,229,176,0.06); }
 
-        .config-section {
-            background: #F9FAFB;
+        /* SECTIONS */
+        .section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
             padding: 1.5rem;
-            border-radius: 0.75rem;
-            margin-bottom: 2rem;
+            margin-bottom: 1.25rem;
+        }
+        .section-title {
+            font-size: 0.8rem;
+            font-family: var(--mono);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text2);
+            margin-bottom: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .section-title::before {
+            content: '';
+            width: 3px;
+            height: 14px;
+            background: var(--accent);
+            border-radius: 2px;
+            display: inline-block;
         }
 
-        .customization-section {
-            background: #F9FAFB;
-            border-radius: 0.75rem;
-            margin-bottom: 2rem;
+        /* GRID */
+        .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; }
+        .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+        .form-group label {
+            font-size: 0.78rem;
+            font-weight: 500;
+            color: var(--text2);
+            font-family: var(--mono);
+        }
+
+        /* INPUTS */
+        input[type="text"], input[type="number"], select, textarea {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            color: var(--text);
+            border-radius: var(--radius);
+            padding: 0.6rem 0.85rem;
+            font-size: 0.9rem;
+            font-family: var(--sans);
+            transition: border-color 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+        input[type="text"]:focus, input[type="number"]:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(108,99,255,0.15);
+        }
+        select { cursor: pointer; }
+        select option { background: var(--surface2); }
+        input[type="color"] {
+            height: 38px;
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--surface2);
+            cursor: pointer;
+            padding: 2px 4px;
+        }
+
+        /* UPLOAD */
+        .upload-area {
+            border: 2px dashed var(--border-accent);
+            border-radius: 14px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--surface2);
+            display: block;
+        }
+        .upload-area:hover {
+            border-color: var(--accent);
+            background: rgba(108,99,255,0.06);
+        }
+        .upload-area .upload-icon {
+            width: 44px;
+            height: 44px;
+            background: rgba(108,99,255,0.15);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 0.75rem;
+            color: var(--accent);
+        }
+        .upload-area .upload-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 0.3rem; }
+        .upload-area .upload-sub { font-size: 0.78rem; color: var(--text2); }
+        input[type="file"] { display: none; }
+
+        /* COLUMN SELECTOR */
+        #columnSelectorArea {
+            display: none;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(0,229,176,0.06);
+            border: 1px solid rgba(0,229,176,0.25);
+            border-radius: var(--radius);
+        }
+        #columnSelectorArea.show { display: block; }
+        .column-selector-title {
+            font-size: 0.8rem;
+            font-family: var(--mono);
+            color: var(--accent2);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .columns-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+        .column-chip {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.35rem 0.75rem;
+            border: 1px solid var(--border-accent);
+            border-radius: 100px;
+            font-size: 0.8rem;
+            font-family: var(--mono);
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--surface2);
+            color: var(--text2);
+        }
+        .column-chip:hover { border-color: var(--accent2); color: var(--accent2); }
+        .column-chip.selected {
+            background: rgba(0,229,176,0.15);
+            border-color: var(--accent2);
+            color: var(--accent2);
+        }
+        .column-chip .chip-count {
+            background: var(--surface3);
+            padding: 0.1rem 0.4rem;
+            border-radius: 100px;
+            font-size: 0.68rem;
+        }
+        .preview-table {
+            overflow-x: auto;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            margin-top: 0.75rem;
+        }
+        .preview-table table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        .preview-table th {
+            background: var(--surface3);
+            padding: 0.5rem 0.75rem;
+            text-align: left;
+            font-family: var(--mono);
+            font-size: 0.72rem;
+            color: var(--text2);
+            border-bottom: 1px solid var(--border);
+        }
+        .preview-table th.active-col { color: var(--accent2); background: rgba(0,229,176,0.08); }
+        .preview-table td {
+            padding: 0.45rem 0.75rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--text2);
+            font-family: var(--mono);
+            font-size: 0.78rem;
+        }
+        .preview-table td.active-col { color: var(--text); background: rgba(0,229,176,0.04); }
+        .preview-table tr:last-child td { border-bottom: none; }
+
+        /* DELIMITER SELECTOR */
+        #delimiterArea {
+            display: none;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(108,99,255,0.06);
+            border: 1px solid rgba(108,99,255,0.25);
+            border-radius: var(--radius);
+        }
+        #delimiterArea.show { display: block; }
+
+        /* BUTTONS */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 0.875rem;
+            font-weight: 600;
+            font-family: var(--sans);
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .btn-accent {
+            background: var(--accent);
+            color: white;
+        }
+        .btn-accent:hover { background: #7c74ff; transform: translateY(-1px); }
+        .btn-success {
+            background: rgba(0,229,176,0.15);
+            color: var(--accent2);
+            border: 1px solid rgba(0,229,176,0.3);
+        }
+        .btn-success:hover { background: rgba(0,229,176,0.25); }
+        .btn-danger {
+            background: rgba(255,79,79,0.12);
+            color: var(--danger);
+            border: 1px solid rgba(255,79,79,0.25);
+        }
+        .btn-danger:hover { background: rgba(255,79,79,0.22); }
+        .btn-ghost {
+            background: var(--surface2);
+            color: var(--text2);
+            border: 1px solid var(--border);
+        }
+        .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+        .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; }
+
+        /* MANUAL */
+        .input-row { display: flex; gap: 0.75rem; }
+        .input-row input { flex: 1; }
+
+        /* DISPLAY SETTINGS */
+        .display-settings {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1rem;
+            margin-top: 0.75rem;
+        }
+        .display-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            align-items: end;
+        }
+        .count-info {
+            font-size: 0.78rem;
+            color: var(--text3);
+            font-family: var(--mono);
+            margin-top: 0.3rem;
+        }
+        .count-info span { color: var(--accent2); }
+
+        /* CUSTOMIZATION TOGGLE */
+        .toggle-section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            margin-bottom: 1.25rem;
             overflow: hidden;
         }
-
-        .customization-header {
+        .toggle-header {
             padding: 1rem 1.5rem;
             cursor: pointer;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: #EFF6FF;
             transition: background 0.2s;
         }
-
-        .customization-header:hover {
-            background: #DBEAFE;
-        }
-
-        .customization-header h3 {
-            font-size: 1rem;
-            font-weight: 600;
-            color: #1F2937;
+        .toggle-header:hover { background: var(--surface2); }
+        .toggle-header-left {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.6rem;
+            font-weight: 600;
+            font-size: 0.9rem;
         }
-
-        .customization-content {
-            padding: 1.5rem;
-            display: none;
+        .toggle-header-left .icon-box {
+            width: 32px; height: 32px;
+            background: rgba(108,99,255,0.15);
+            border-radius: 7px;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--accent);
         }
+        .toggle-body { display: none; border-top: 1px solid var(--border); }
+        .toggle-body.show { display: block; }
+        .arrow { transition: transform 0.3s; color: var(--text2); }
+        .arrow.rotated { transform: rotate(180deg); }
 
-        .customization-content.show {
-            display: block;
+        /* ── ADVANCED CUSTOMIZATION ─────────────────────────────── */
+
+        /* PRESETS */
+        .cust-presets {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            background: rgba(108,99,255,0.04);
         }
-
-        .form-grid {
+        .cust-presets-title {
+            font-size: 0.72rem;
+            font-family: var(--mono);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text3);
+            margin-bottom: 0.9rem;
+        }
+        .presets-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 0.6rem;
         }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .form-group label {
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: #374151;
-            margin-bottom: 0.5rem;
-        }
-
-        .form-group input[type="number"],
-        .form-group input[type="text"],
-        .form-group input[type="color"] {
-            padding: 0.5rem;
-            border: 1px solid #D1D5DB;
-            border-radius: 0.375rem;
-            font-size: 0.875rem;
-        }
-
-        .form-group input[type="color"] {
-            height: 40px;
+        .preset-card {
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
             cursor: pointer;
+            transition: border-color 0.2s, transform 0.15s;
         }
-
-        .checkbox-group {
+        .preset-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+        .preset-card.active { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(108,99,255,0.25); }
+        .preset-thumb {
+            height: 56px;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            justify-content: center;
+            padding: 6px;
+            position: relative;
         }
-
-        .checkbox-group input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
+        .preset-thumb .pt-bar {
+            height: 100%;
+            display: flex;
+            gap: 2px;
+            align-items: center;
         }
-
-        .preview-box {
-            background: white;
-            border: 2px dashed #D1D5DB;
-            border-radius: 0.5rem;
-            padding: 1.5rem;
-            margin-top: 1rem;
-            text-align: center;
-        }
-
-        .preview-box canvas {
-            max-width: 100%;
-            height: auto;
-        }
-
-        .arrow-icon {
-            transition: transform 0.3s;
-        }
-
-        .arrow-icon.rotated {
-            transform: rotate(180deg);
-        }
-
-        label {
+        .preset-thumb .pt-bar span {
             display: block;
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: #374151;
-            margin-bottom: 0.5rem;
+            height: 80%;
+            border-radius: 1px;
+        }
+        .preset-label {
+            font-size: 0.7rem;
+            font-family: var(--mono);
+            text-align: center;
+            padding: 0.3rem 0;
+            color: var(--text2);
+            border-top: 1px solid var(--border);
+            background: var(--surface2);
         }
 
-        select, input[type="text"] {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border: 1px solid #D1D5DB;
-            border-radius: 0.5rem;
-            font-size: 1rem;
+        /* TABS */
+        .cust-tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface2);
+        }
+        .cust-tab {
+            padding: 0.7rem 1.25rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            font-family: var(--mono);
+            color: var(--text3);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
             transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            user-select: none;
         }
+        .cust-tab:hover { color: var(--text2); }
+        .cust-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+        .cust-panel { display: none; padding: 1.5rem; }
+        .cust-panel.active { display: block; }
 
-        select:focus, input[type="text"]:focus {
-            outline: none;
-            border-color: #3B82F6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
-
-        .upload-area {
+        /* SLIDERS */
+        .slider-group {
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            height: 8rem;
-            border: 2px dashed #93C5FD;
-            border-radius: 0.75rem;
-            background: #EFF6FF;
-            cursor: pointer;
-            transition: background 0.2s;
-            margin-bottom: 1.5rem;
+            gap: 0.35rem;
+            margin-bottom: 1.1rem;
         }
-
-        .upload-area:hover {
-            background: #DBEAFE;
-        }
-
-        .upload-text {
-            font-size: 0.875rem;
-            color: #4B5563;
-        }
-
-        .upload-text-bold {
-            font-weight: 600;
-        }
-
-        .upload-text-small {
-            font-size: 0.75rem;
-            color: #6B7280;
-            margin-top: 0.25rem;
-        }
-
-        .input-group {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .input-group input {
-            flex: 1;
-        }
-
-        .btn {
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 0.5rem;
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            justify-content: center;
-        }
-
-        .btn-primary {
-            background: #3B82F6;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #2563EB;
-        }
-
-        .btn-success {
-            background: #10B981;
-            color: white;
-        }
-
-        .btn-success:hover {
-            background: #059669;
-        }
-
-        .btn-danger {
-            background: #EF4444;
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background: #DC2626;
-        }
-
-        .btn-small {
-            padding: 0.5rem 0.75rem;
-            font-size: 0.875rem;
-        }
-
-        .header-actions {
+        .slider-label-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1.5rem;
-            flex-wrap: wrap;
-            gap: 1rem;
         }
-
-        .header-actions h2 {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: #1F2937;
+        .slider-label {
+            font-size: 0.78rem;
+            color: var(--text2);
+            font-family: var(--mono);
         }
-
-        .action-buttons {
-            display: flex;
-            gap: 0.5rem;
+        .slider-value {
+            font-size: 0.78rem;
+            font-family: var(--mono);
+            color: var(--accent);
+            background: rgba(108,99,255,0.12);
+            padding: 0.1rem 0.5rem;
+            border-radius: 4px;
+            min-width: 44px;
+            text-align: center;
         }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 1rem;
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 4px;
+            border-radius: 2px;
+            background: var(--surface3);
+            outline: none;
+            cursor: pointer;
         }
-
-        .barcode-card {
-            background: white;
-            border: 2px solid #E5E7EB;
-            border-radius: 0.5rem;
-            padding: 1rem;
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            box-shadow: 0 0 0 3px rgba(108,99,255,0.2);
             transition: box-shadow 0.2s;
         }
-
-        .barcode-card:hover {
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        input[type="range"]::-webkit-slider-thumb:hover {
+            box-shadow: 0 0 0 5px rgba(108,99,255,0.3);
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 16px; height: 16px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: none;
+            cursor: pointer;
         }
 
-        .barcode-header {
+        /* COLOR SWATCHES */
+        .color-field {
+            margin-bottom: 1.1rem;
+        }
+        .color-field-label {
+            font-size: 0.78rem;
+            color: var(--text2);
+            font-family: var(--mono);
+            margin-bottom: 0.5rem;
+        }
+        .color-row {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .color-picker-wrap {
+            position: relative;
+        }
+        .color-picker-wrap input[type="color"] {
+            width: 44px;
+            height: 36px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 2px;
+            background: var(--surface2);
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .color-swatches {
+            display: flex;
+            gap: 0.35rem;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+        .swatch {
+            width: 24px;
+            height: 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: transform 0.15s, border-color 0.15s;
+            flex-shrink: 0;
+        }
+        .swatch:hover { transform: scale(1.2); border-color: rgba(255,255,255,0.3); }
+        .swatch.active { border-color: white; transform: scale(1.1); }
+        .color-hex-input {
+            width: 90px !important;
+            font-family: var(--mono) !important;
+            font-size: 0.75rem !important;
+            padding: 0.35rem 0.6rem !important;
+            text-transform: uppercase;
+        }
+
+        /* TOGGLE SWITCH */
+        .toggle-switch-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.6rem 0;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 0.4rem;
+        }
+        .toggle-switch-row:last-child { border-bottom: none; }
+        .toggle-switch-label {
+            font-size: 0.85rem;
+            color: var(--text);
+        }
+        .toggle-switch-sub {
+            font-size: 0.73rem;
+            color: var(--text3);
+            font-family: var(--mono);
+            margin-top: 2px;
+        }
+        .toggle-switch {
+            position: relative;
+            width: 40px;
+            height: 22px;
+            flex-shrink: 0;
+        }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-track {
+            position: absolute;
+            inset: 0;
+            background: var(--surface3);
+            border-radius: 22px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border: 1px solid var(--border);
+        }
+        .toggle-track::after {
+            content: '';
+            position: absolute;
+            width: 16px; height: 16px;
+            left: 2px; top: 2px;
+            background: var(--text3);
+            border-radius: 50%;
+            transition: transform 0.2s, background 0.2s;
+        }
+        .toggle-switch input:checked + .toggle-track { background: rgba(108,99,255,0.3); border-color: var(--accent); }
+        .toggle-switch input:checked + .toggle-track::after { transform: translateX(18px); background: var(--accent); }
+
+        /* TEXT INPUTS inside panel */
+        .panel-text-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+            margin-bottom: 1.1rem;
+        }
+        .panel-text-group label {
+            font-size: 0.78rem;
+            color: var(--text2);
+            font-family: var(--mono);
+        }
+
+        /* PREVIEW SECTION */
+        .cust-preview-wrap {
+            border-top: 1px solid var(--border);
+            padding: 1.5rem;
+            background: var(--surface2);
+        }
+        .cust-preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .cust-preview-title {
+            font-size: 0.72rem;
+            font-family: var(--mono);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text3);
+        }
+        .preview-bg-toggle {
+            display: flex;
+            gap: 0.35rem;
+        }
+        .preview-bg-btn {
+            width: 22px; height: 22px;
+            border-radius: 4px;
+            border: 1.5px solid var(--border);
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+        .preview-bg-btn:hover { border-color: var(--accent); }
+        .preview-bg-btn.active { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(108,99,255,0.3); }
+        .preview-stage {
+            border-radius: 12px;
+            padding: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 140px;
+            transition: background 0.3s;
+        }
+        .preview-stage canvas { max-width: 100%; box-shadow: 0 8px 32px rgba(0,0,0,0.35); }
+        .preview-meta {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.75rem;
+            flex-wrap: wrap;
+        }
+        .preview-meta-item {
+            font-size: 0.7rem;
+            font-family: var(--mono);
+            color: var(--text3);
+        }
+        .preview-meta-item span { color: var(--text2); }
+
+        /* ACTIONS BAR */
+        .cust-actions {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+            align-items: center;
+            background: var(--surface);
+        }
+        .btn-xs {
+            padding: 0.4rem 0.85rem;
+            font-size: 0.78rem;
+        }
+
+        /* PREVIEW */
+        .preview-box {
+            background: #fff;
+            border-radius: var(--radius);
+            padding: 1rem;
+            text-align: center;
+            margin-top: 1.25rem;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .preview-box canvas { max-width: 100%; }
+
+        /* RESULTS */
+        #results-section { display: none; }
+        #results-section.show { display: block; }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+        .results-title {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        .results-title .count-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(108,99,255,0.2);
+            color: var(--accent);
+            font-family: var(--mono);
+            font-size: 0.75rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 100px;
+            margin-left: 0.5rem;
+        }
+        .results-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+        /* BARCODE GRID */
+        .bc-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 1rem;
+        }
+        .bc-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+        .bc-card:hover { border-color: var(--border-accent); transform: translateY(-2px); }
+        .bc-card-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
             margin-bottom: 0.75rem;
+            gap: 0.5rem;
         }
-
-        .barcode-code {
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: #374151;
+        .bc-code {
+            font-family: var(--mono);
+            font-size: 0.75rem;
+            color: var(--text2);
             word-break: break-all;
+            flex: 1;
         }
-
-        .btn-icon {
+        .bc-delete-btn {
             background: none;
             border: none;
             cursor: pointer;
-            padding: 0.25rem;
-            color: #EF4444;
+            color: var(--text3);
+            padding: 2px;
             transition: color 0.2s;
+            flex-shrink: 0;
         }
-
-        .btn-icon:hover {
-            color: #DC2626;
-        }
-
-        .barcode-container {
+        .bc-delete-btn:hover { color: var(--danger); }
+        .bc-canvas-wrap {
             background: white;
+            border-radius: 7px;
             padding: 0.5rem;
-            border: 1px solid #E5E7EB;
-            border-radius: 0.25rem;
             margin-bottom: 0.75rem;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-
-        .barcode-container canvas {
-            width: 100%;
-            display: block;
-        }
-
-        .empty-state {
+        .bc-canvas-wrap canvas { width: 100%; display: block; }
+        .bc-error {
+            color: var(--danger);
+            font-size: 0.75rem;
+            font-family: var(--mono);
             text-align: center;
-            padding: 3rem 0;
-            color: #6B7280;
+            padding: 0.5rem;
         }
 
-        .empty-state-title {
-            font-size: 1.125rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .empty-state-text {
-            font-size: 0.875rem;
-        }
-
-        input[type="file"] {
-            display: none;
-        }
-
-        #results-section {
-            display: none;
-        }
-
-        #results-section.show {
-            display: block;
-        }
-
+        /* PAGINATION */
         .pagination {
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.4rem;
             margin-top: 2rem;
             flex-wrap: wrap;
         }
-
         .pagination button {
-            padding: 0.5rem 1rem;
-            border: 1px solid #D1D5DB;
-            background: white;
-            border-radius: 0.5rem;
+            padding: 0.45rem 0.85rem;
+            border: 1px solid var(--border);
+            background: var(--surface2);
+            color: var(--text2);
+            border-radius: 7px;
             cursor: pointer;
+            font-size: 0.8rem;
             transition: all 0.2s;
+            font-family: var(--sans);
+        }
+        .pagination button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+        .pagination button:disabled { opacity: 0.35; cursor: not-allowed; }
+        .pagination-info { font-size: 0.8rem; color: var(--text2); font-family: var(--mono); padding: 0 0.25rem; }
+
+        /* EMPTY */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 0;
+            color: var(--text3);
+        }
+        .empty-state .empty-icon {
+            width: 60px; height: 60px;
+            background: var(--surface2);
+            border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 1rem;
+            color: var(--text3);
+        }
+        .empty-state p { font-size: 0.9rem; }
+
+        /* ALERT / TOAST */
+        #toast {
+            position: fixed;
+            top: 1.5rem;
+            right: 1.5rem;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            pointer-events: none;
+        }
+        .toast-item {
+            background: var(--surface);
+            border: 1px solid var(--border-accent);
+            color: var(--text);
             font-size: 0.875rem;
+            padding: 0.75rem 1.2rem;
+            border-radius: var(--radius);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            animation: slideIn 0.3s ease, fadeOut 0.4s ease 2.8s forwards;
+            max-width: 320px;
+        }
+        .toast-item.success { border-color: rgba(0,229,176,0.4); }
+        .toast-item.error { border-color: rgba(255,79,79,0.4); }
+        .toast-item.warning { border-color: rgba(255,179,71,0.4); }
+        @keyframes slideIn { from { transform: translateX(30px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+
+        /* CHECKBOX */
+        .check-row {
+            display: flex; align-items: center; gap: 0.5rem;
+            font-size: 0.875rem; color: var(--text2); cursor: pointer;
+        }
+        .check-row input[type="checkbox"] {
+            width: 16px; height: 16px; cursor: pointer;
+            accent-color: var(--accent);
         }
 
-        .pagination button:hover:not(:disabled) {
-            background: #F3F4F6;
-            border-color: #3B82F6;
+        /* DIVIDER */
+        .or-divider {
+            display: flex; align-items: center; gap: 1rem;
+            margin: 1.25rem 0; color: var(--text3); font-size: 0.8rem; font-family: var(--mono);
+        }
+        .or-divider::before, .or-divider::after {
+            content: ''; flex: 1; height: 1px; background: var(--border);
         }
 
-        .pagination button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
+        /* TYPE PICKER */
+        .type-picker-label {
+            font-size: 0.78rem;
+            font-weight: 500;
+            color: var(--text2);
+            font-family: var(--mono);
+            margin-bottom: 0.65rem;
+        }
+        .type-category {
+            margin-bottom: 1.1rem;
+        }
+        .type-category-title {
+            font-size: 0.65rem;
+            font-family: var(--mono);
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--text3);
+            margin-bottom: 0.5rem;
+            padding-left: 2px;
+        }
+        .type-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 0.5rem;
+        }
+        .type-card {
+            background: var(--surface2);
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            padding: 0.65rem 0.75rem;
+            cursor: pointer;
+            transition: all 0.18s;
+            user-select: none;
+        }
+        .type-card:hover { border-color: var(--border-accent); background: var(--surface3); }
+        .type-card.active {
+            border-color: var(--accent);
+            background: rgba(108,99,255,0.1);
+            box-shadow: 0 0 0 2px rgba(108,99,255,0.18);
+        }
+        .type-card.active .tc-name { color: var(--accent); }
+        .type-card.qr-card.active {
+            border-color: var(--accent2);
+            background: rgba(0,229,176,0.08);
+            box-shadow: 0 0 0 2px rgba(0,229,176,0.18);
+        }
+        .type-card.qr-card.active .tc-name { color: var(--accent2); }
+        .tc-icon {
+            font-size: 1.25rem;
+            margin-bottom: 0.3rem;
+            line-height: 1;
+        }
+        .tc-name {
+            font-size: 0.78rem;
+            font-weight: 700;
+            font-family: var(--mono);
+            color: var(--text);
+            margin-bottom: 0.2rem;
+        }
+        .tc-desc {
+            font-size: 0.67rem;
+            color: var(--text3);
+            line-height: 1.3;
+        }
+        .format-info-box {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+            padding: 0.65rem 0.85rem;
+            border-radius: 8px;
+            font-size: 0.78rem;
+            font-family: var(--mono);
+            background: rgba(108,99,255,0.07);
+            border: 1px solid rgba(108,99,255,0.2);
+            color: var(--text2);
+        }
+        .format-info-box.warn {
+            background: rgba(255,179,71,0.07);
+            border-color: rgba(255,179,71,0.25);
+            color: var(--warning);
+        }
+        .format-info-box.qr {
+            background: rgba(0,229,176,0.07);
+            border-color: rgba(0,229,176,0.25);
+            color: var(--accent2);
         }
 
-        .pagination-info {
-            font-size: 0.875rem;
-            color: #6B7280;
-            margin: 0 0.5rem;
+        /* QR OPTIONS */
+        #qrOptions {
+            display: none;
+            padding: 0.85rem;
+            background: rgba(0,229,176,0.05);
+            border: 1px solid rgba(0,229,176,0.2);
+            border-radius: 10px;
+            margin-top: 0.85rem;
+        }
+        #qrOptions.show { display: block; }
+        .qr-opts-title {
+            font-size: 0.72rem;
+            font-family: var(--mono);
+            color: var(--accent2);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.75rem;
+        }
+        .qr-opts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
         }
 
-        @media (max-width: 768px) {
-            h1 {
-                font-size: 1.875rem;
-            }
-
-            .grid {
-                grid-template-columns: 1fr;
-            }
-
-            .header-actions {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .action-buttons {
-                flex-direction: column;
-            }
-
-            .pagination button {
-                padding: 0.4rem 0.6rem;
-                font-size: 0.75rem;
-            }
-
-            .pagination-info {
-                font-size: 0.75rem;
-            }
+        @media (max-width: 640px) {
+            .header h1 { font-size: 1.8rem; }
+            .display-row { grid-template-columns: 1fr; }
+            .type-cards { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+            .qr-opts-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="card">
-            <h1>Generador de Códigos de Barras</h1>
-            <p class="subtitle">
-                Sube un archivo Excel (.xlsx, .xls), Texto (.txt) o ingresa códigos manualmente
-            </p>
+<div id="toast"></div>
+<div class="container">
 
-            <div class="config-section">
-                <label for="barcodeType">Tipo de Código de Barras</label>
-                <select id="barcodeType">
-                    <option value="CODE128">CODE128 - Universal (acepta cualquier texto/números)</option>
-                    <option value="EAN13">EAN13 - Productos (solo códigos de 13 dígitos)</option>
-                    <option value="UPC">UPC - Productos USA (solo códigos de 12 dígitos)</option>
-                    <option value="CODE39">CODE39 - Industrial (letras, números y símbolos)</option>
-                    <option value="ITF14">ITF14 - Cajas (solo códigos de 14 dígitos)</option>
-                </select>
-                <p id="formatInfo" style="margin-top: 0.5rem; font-size: 0.75rem; color: #6B7280;">
-                    💡 CODE128 acepta cualquier texto o números
-                </p>
-            </div>
+    <!-- HEADER -->
+    <div class="header">
+        <div class="header-badge">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <rect x="2" y="4" width="3" height="16"/><rect x="7" y="4" width="1" height="16"/>
+                <rect x="10" y="4" width="2" height="16"/><rect x="14" y="4" width="1" height="16"/>
+                <rect x="17" y="4" width="3" height="16"/><rect x="21" y="4" width="1" height="16"/>
+            </svg>
+            Barcode Generator Pro
+        </div>
+        <h1>Generador de <span>Códigos de Barras</span></h1>
+        <p>Importa desde bases de datos, archivos delimitados o ingresa códigos manualmente</p>
+        <div class="format-badges">
+            <span class="format-badge highlight">TXT simple</span>
+            <span class="format-badge highlight">CSV por comas</span>
+            <span class="format-badge highlight">TXT por tabulación</span>
+            <span class="format-badge highlight">XLSX / XLS</span>
+            <span class="format-badge">Selector de columna</span>
+            <span class="format-badge">Paginación configurable</span>
+        </div>
+    </div>
 
-            <div class="customization-section">
-                <div class="customization-header" id="customizationToggle">
-                    <h3>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="3"></circle>
-                            <path d="M12 1v6m0 6v6m7.071-13.071l-4.243 4.243m-5.656 5.656l-4.243 4.243M1 12h6m6 0h6m-13.071 7.071l4.243-4.243m5.656-5.656l4.243-4.243"></path>
-                        </svg>
-                        Personalización Avanzada
-                    </h3>
-                    <svg class="arrow-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="6 9 12 15 18 9"></polyline>
-                    </svg>
+    <!-- CONFIG: BARCODE TYPE + DISPLAY -->
+    <div class="section">
+        <div class="section-title">Configuración</div>
+        <div class="form-row">
+            <div class="form-group" style="grid-column: span 2;">
+        <div class="type-picker-label">Tipo de Código</div>
+
+        <!-- CATEGORY: 1D UNIVERSAL -->
+        <div class="type-category">
+            <div class="type-category-title">Universal · 1D</div>
+            <div class="type-cards">
+                <div class="type-card active" data-type="CODE128" onclick="selectBarcodeType(this)">
+                    <div class="tc-icon">▐▌▌▐▌▐▌▌</div>
+                    <div class="tc-name">CODE128</div>
+                    <div class="tc-desc">Texto y números. El más versátil</div>
                 </div>
-                <div class="customization-content" id="customizationContent">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="barcodeWidth">Grosor de Barras</label>
-                            <input type="number" id="barcodeWidth" min="1" max="5" step="0.5" value="2">
-                        </div>
-                        <div class="form-group">
-                            <label for="barcodeHeight">Altura del Código (px)</label>
-                            <input type="number" id="barcodeHeight" min="50" max="300" step="10" value="100">
-                        </div>
-                        <div class="form-group">
-                            <label for="fontSize">Tamaño de Fuente</label>
-                            <input type="number" id="fontSize" min="8" max="30" step="1" value="14">
-                        </div>
-                        <div class="form-group">
-                            <label for="margin">Margen (px)</label>
-                            <input type="number" id="margin" min="0" max="50" step="5" value="10">
-                        </div>
-                        <div class="form-group">
-                            <label for="bgColor">Color de Fondo</label>
-                            <input type="color" id="bgColor" value="#ffffff">
-                        </div>
-                        <div class="form-group">
-                            <label for="lineColor">Color de Barras</label>
-                            <input type="color" id="lineColor" value="#000000">
-                        </div>
-                        <div class="form-group">
-                            <label for="borderWidth">Grosor Contorno (px)</label>
-                            <input type="number" id="borderWidth" min="0" max="10" step="1" value="0">
-                        </div>
-                        <div class="form-group">
-                            <label for="borderColor">Color Contorno</label>
-                            <input type="color" id="borderColor" value="#000000">
-                        </div>
-                        <div class="form-group">
-                            <label for="borderRadius">Redondeo Esquinas (px)</label>
-                            <input type="number" id="borderRadius" min="0" max="50" step="5" value="15">
-                        </div>
-                    </div>
-                    
-                    <div style="margin-top: 1rem;">
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="displayValue" checked>
-                            <label for="displayValue" style="margin: 0;">Mostrar valor del código</label>
-                        </div>
-                    </div>
-
-                    <div class="form-grid" style="margin-top: 1rem;">
-                        <div class="form-group">
-                            <label for="textTop">Texto Superior</label>
-                            <input type="text" id="textTop" placeholder="Ej: Mi Empresa">
-                        </div>
-                        <div class="form-group">
-                            <label for="textBottom">Texto Inferior</label>
-                            <input type="text" id="textBottom" placeholder="Ej: www.miempresa.com">
-                        </div>
-                        <div class="form-group">
-                            <label for="textSize">Tamaño Texto Extra</label>
-                            <input type="number" id="textSize" min="8" max="24" step="1" value="12">
-                        </div>
-                    </div>
-
-                    <div class="preview-box">
-                        <p style="font-size: 0.875rem; color: #6B7280; margin-bottom: 1rem;">Vista Previa:</p>
-                        <canvas id="previewCanvas"></canvas>
-                    </div>
-
-                    <button id="applyCustomization" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
-                        Aplicar Personalización a Todos
-                    </button>
+                <div class="type-card" data-type="CODE39" onclick="selectBarcodeType(this)">
+                    <div class="tc-icon">▌▐▌▌▐▐▌</div>
+                    <div class="tc-name">CODE39</div>
+                    <div class="tc-desc">Industrial. Letras A–Z, 0–9</div>
+                </div>
+                <div class="type-card" data-type="CODE93" onclick="selectBarcodeType(this)">
+                    <div class="tc-icon">▌▐▐▌▌▐▌</div>
+                    <div class="tc-name">CODE93</div>
+                    <div class="tc-desc">Compacto. Similar a CODE39</div>
+                </div>
+                <div class="type-card" data-type="codabar" onclick="selectBarcodeType(this)">
+                    <div class="tc-icon">▌▌▐▐▌▐▌</div>
+                    <div class="tc-name">CODABAR</div>
+                    <div class="tc-desc">Bibliotecas y hospitales</div>
                 </div>
             </div>
+        </div>
 
-            <div style="margin-bottom: 1.5rem;">
-                <label class="upload-area" for="fileInput">
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
-                    </svg>
-                    <p class="upload-text">
-                        <span class="upload-text-bold">Click para subir</span> o arrastra un archivo
-                    </p>
-                    <p class="upload-text-small">XLSX, XLS o TXT (un código por línea)</p>
-                </label>
-                <input type="file" id="fileInput" accept=".xlsx,.xls,.txt" style="display: none;">
-            </div>
-
-            <div class="config-section">
-                <label for="manualCode">O ingresa un código manualmente</label>
-                <div class="input-group">
-                    <input type="text" id="manualCode" placeholder="Ingresa un código...">
-                    <button id="addBtn" class="btn btn-primary">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                        </svg>
-                        Agregar
-                    </button>
+        <!-- CATEGORY: RETAIL / EAN / UPC -->
+        <div class="type-category">
+            <div class="type-category-title">Retail · EAN / UPC</div>
+            <div class="type-cards">
+                <div class="type-card" data-type="EAN13" onclick="selectBarcodeType(this)">
+                    <div class="tc-icon">🛒</div>
+                    <div class="tc-name">EAN-13</div>
+                    <div class="tc-desc">Productos globales. 13 dígitos</div>
+                </div>
+                <div class="type-card" data-type="EAN8" onclick="selectBarcodeType(this)">
+                    <div class="tc-icon">🏪</div>
+                    <div class="tc-name">EAN-8</div>
+                    <div class="tc-desc">Productos pequeños. 8 dígitos</div>
+                </div>
+                <div class="type-card" data-type="UPC" onclick="selectBarcodeType(this)">
+                    <div class="tc-icon">🇺🇸</div>
+                    <div class="tc-name">UPC-A</div>
+                    <div class="tc-desc">Productos USA. 12 dígitos</div>
+                </div>
+                <div class="type-card" data-type="UPCE" onclick="selectBarcodeType(this)">
+                    <div class="tc-icon">📦</div>
+                    <div class="tc-name">UPC-E</div>
+                    <div class="tc-desc">UPC comprimido. 8 dígitos</div>
+                </div>
+                <div class="type-card" data-type="EAN5" onclick="selectBarcodeType(this)">
+                    <div class="tc-icon">📚</div>
+                    <div class="tc-name">EAN-5</div>
+                    <div class="tc-desc">Suplemento de precio. 5 dígitos</div>
+                </div>
+                <div class="type-card" data-type="EAN2" onclick="selectBarcodeType(this)">
+                    <div class="tc-icon">📰</div>
+                    <div class="tc-name">EAN-2</div>
+                    <div class="tc-desc">Suplemento revistas. 2 dígitos</div>
                 </div>
             </div>
+        </div>
 
-            <div id="results-section">
-                <div class="header-actions">
-                    <h2>Códigos de Barras Generados (<span id="codeCount">0</span>)</h2>
-                    <div class="action-buttons">
-                        <button id="downloadAllBtn" class="btn btn-success btn-small">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
-                            </svg>
-                            Descargar ZIP
-                        </button>
-                        <button id="clearAllBtn" class="btn btn-danger btn-small">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                            </svg>
-                            Limpiar Todo
-                        </button>
+        <!-- CATEGORY: LOGÍSTICA -->
+        <div class="type-category">
+            <div class="type-category-title">Logística · Almacén</div>
+            <div class="type-cards">
+                <div class="type-card" data-type="ITF14" onclick="selectBarcodeType(this)">
+                    <div class="tc-icon">📬</div>
+                    <div class="tc-name">ITF-14</div>
+                    <div class="tc-desc">Cajas y palés. 14 dígitos</div>
+                </div>
+                <div class="type-card" data-type="ITF" onclick="selectBarcodeType(this)">
+                    <div class="tc-icon">🏭</div>
+                    <div class="tc-name">ITF</div>
+                    <div class="tc-desc">Interleaved 2 of 5. Numérico</div>
+                </div>
+                <div class="type-card" data-type="MSI" onclick="selectBarcodeType(this)">
+                    <div class="tc-icon">🗄️</div>
+                    <div class="tc-name">MSI</div>
+                    <div class="tc-desc">Inventario y estanterías</div>
+                </div>
+                <div class="type-card" data-type="pharmacode" onclick="selectBarcodeType(this)">
+                    <div class="tc-icon">💊</div>
+                    <div class="tc-name">PHARMACODE</div>
+                    <div class="tc-desc">Industria farmacéutica</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CATEGORY: 2D -->
+        <div class="type-category">
+            <div class="type-category-title">2D · Matriciales</div>
+            <div class="type-cards">
+                <div class="type-card qr-card" data-type="QR" onclick="selectBarcodeType(this)">
+                    <div class="tc-icon">⬛</div>
+                    <div class="tc-name">QR Code</div>
+                    <div class="tc-desc">URLs, texto, contactos. Muy popular</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hidden select for compatibility -->
+        <select id="barcodeType" style="display:none;">
+            <option value="CODE128" selected>CODE128</option>
+        </select>
+
+        <div id="formatInfo" class="format-info-box">CODE128 acepta cualquier texto o números — ideal para uso general</div>
+
+        <!-- QR EXTRA OPTIONS -->
+        <div id="qrOptions">
+            <div class="qr-opts-title">⬛ Opciones QR</div>
+            <div class="qr-opts-grid">
+                <div class="form-group">
+                    <label>Corrección de errores</label>
+                    <select id="qrErrorLevel">
+                        <option value="L">L — Baja (7%) · más compacto</option>
+                        <option value="M" selected>M — Media (15%) · recomendado</option>
+                        <option value="Q">Q — Alta (25%)</option>
+                        <option value="H">H — Máxima (30%) · más robusto</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Tamaño del módulo (px)</label>
+                    <div style="display:flex;gap:0.5rem;align-items:center;margin-top:0.25rem;">
+                        <input type="range" id="qrSize" min="100" max="600" step="20" value="200" style="flex:1;">
+                        <span style="font-size:0.78rem;font-family:var(--mono);color:var(--accent2);min-width:48px;text-align:right;" id="val-qrSize">200px</span>
                     </div>
                 </div>
-                <div id="barcodeGrid" class="grid"></div>
-                
-                <div id="paginationControls" class="pagination">
-                    <button id="firstPageBtn">Primera</button>
-                    <button id="prevPageBtn">Anterior</button>
-                    <span class="pagination-info">
-                        Página <span id="currentPageNum">1</span> de <span id="totalPages">1</span>
-                    </span>
-                    <button id="nextPageBtn">Siguiente</button>
-                    <button id="lastPageBtn">Última</button>
+                <div class="form-group">
+                    <label>Margen QR (módulos)</label>
+                    <div style="display:flex;gap:0.5rem;align-items:center;margin-top:0.25rem;">
+                        <input type="range" id="qrMargin" min="0" max="10" step="1" value="4" style="flex:1;">
+                        <span style="font-size:0.78rem;font-family:var(--mono);color:var(--accent2);min-width:28px;text-align:right;" id="val-qrMargin">4</span>
+                    </div>
                 </div>
             </div>
+        </div>
+            </div>
+        </div>
 
-            <div id="emptyState" class="empty-state">
-                <p class="empty-state-title">No hay códigos de barras generados aún</p>
-                <p class="empty-state-text">Sube un archivo Excel (.xlsx, .xls), Texto (.txt) o ingresa códigos manualmente</p>
+        <div class="display-settings">
+            <div style="font-size: 0.78rem; font-family: var(--mono); color: var(--text2); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                Configuración de visualización
+            </div>
+            <div class="display-row">
+                <div class="form-group">
+                    <label>Códigos por página (visualización)</label>
+                    <select id="perPageSelect">
+                        <option value="12">12 por página</option>
+                        <option value="24">24 por página</option>
+                        <option value="48">48 por página</option>
+                        <option value="96">96 por página</option>
+                        <option value="200">200 por página</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Límite de carga desde archivo</label>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <input type="number" id="loadLimitInput" min="1" max="999999" value="500" style="flex: 1;">
+                        <label class="check-row" style="white-space: nowrap;">
+                            <input type="checkbox" id="loadAllCheck"> Todo
+                        </label>
+                    </div>
+                    <div class="count-info">Máximo a importar: <span id="loadLimitDisplay">500</span></div>
+                </div>
             </div>
         </div>
     </div>
 
-    <script>
-        let codes = [];
-        let barcodeType = 'CODE128';
-        let currentPage = 1;
-        const codesPerPage = 12;
-        
-        let customization = {
-            width: 2,
-            height: 100,
-            displayValue: true,
-            fontSize: 14,
-            margin: 10,
-            background: '#ffffff',
-            lineColor: '#000000',
-            textTop: '',
-            textBottom: '',
-            textSize: 12,
-            borderWidth: 0,
-            borderColor: '#000000',
-            borderRadius: 15
-        };
+    <!-- UPLOAD -->
+    <div class="section">
+        <div class="section-title">Cargar Archivo</div>
 
-        const fileInput = document.getElementById('fileInput');
-        const manualCodeInput = document.getElementById('manualCode');
-        const addBtn = document.getElementById('addBtn');
-        const barcodeTypeSelect = document.getElementById('barcodeType');
-        const resultsSection = document.getElementById('results-section');
-        const emptyState = document.getElementById('emptyState');
-        const barcodeGrid = document.getElementById('barcodeGrid');
-        const codeCount = document.getElementById('codeCount');
-        const downloadAllBtn = document.getElementById('downloadAllBtn');
-        const clearAllBtn = document.getElementById('clearAllBtn');
-        
-        const firstPageBtn = document.getElementById('firstPageBtn');
-        const prevPageBtn = document.getElementById('prevPageBtn');
-        const nextPageBtn = document.getElementById('nextPageBtn');
-        const lastPageBtn = document.getElementById('lastPageBtn');
-        const currentPageNum = document.getElementById('currentPageNum');
-        const totalPagesEl = document.getElementById('totalPages');
-        const paginationControls = document.getElementById('paginationControls');
-        
-        const customizationToggle = document.getElementById('customizationToggle');
-        const customizationContent = document.getElementById('customizationContent');
-        const previewCanvas = document.getElementById('previewCanvas');
-        const applyCustomizationBtn = document.getElementById('applyCustomization');
-        
-        const barcodeWidthInput = document.getElementById('barcodeWidth');
-        const barcodeHeightInput = document.getElementById('barcodeHeight');
-        const fontSizeInput = document.getElementById('fontSize');
-        const marginInput = document.getElementById('margin');
-        const bgColorInput = document.getElementById('bgColor');
-        const lineColorInput = document.getElementById('lineColor');
-        const displayValueInput = document.getElementById('displayValue');
-        const textTopInput = document.getElementById('textTop');
-        const textBottomInput = document.getElementById('textBottom');
-        const textSizeInput = document.getElementById('textSize');
-        const borderWidthInput = document.getElementById('borderWidth');
-        const borderColorInput = document.getElementById('borderColor');
-        const borderRadiusInput = document.getElementById('borderRadius');
+        <label class="upload-area" for="fileInput">
+            <div class="upload-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                </svg>
+            </div>
+            <p class="upload-title">Click para subir o arrastra un archivo</p>
+            <p class="upload-sub">XLSX · XLS · TXT simple · CSV (comas) · TXT delimitado por tabulación</p>
+        </label>
+        <input type="file" id="fileInput" accept=".xlsx,.xls,.txt,.csv">
 
-        function isValidForFormat(value, format) {
-            const cleanValue = value.replace(/\s/g, '');
-            
-            switch(format) {
-                case 'EAN13':
-                    return /^\d{13}$/.test(cleanValue);
-                case 'UPC':
-                    return /^\d{12}$/.test(cleanValue);
-                case 'ITF14':
-                    return /^\d{14}$/.test(cleanValue);
-                case 'CODE39':
-                    return /^[A-Z0-9\-. $/+%]+$/i.test(cleanValue);
-                case 'CODE128':
-                default:
-                    return cleanValue.length > 0;
-            }
+        <!-- DELIMITER SELECTOR (para TXT/CSV con múltiples columnas) -->
+        <div id="delimiterArea">
+            <div style="font-size: 0.78rem; font-family: var(--mono); color: var(--accent); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>
+                Archivo con columnas detectado — elige el delimitador
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;" id="delimiterBtns">
+                <button class="btn btn-ghost btn-delim" data-delim="auto">🔍 Auto-detectar</button>
+                <button class="btn btn-ghost btn-delim" data-delim=",">Coma ( , )</button>
+                <button class="btn btn-ghost btn-delim" data-delim="	">Tabulación ( ⇥ )</button>
+                <button class="btn btn-ghost btn-delim" data-delim=";">Punto y coma ( ; )</button>
+                <button class="btn btn-ghost btn-delim" data-delim="|">Pipe ( | )</button>
+            </div>
+        </div>
+
+        <!-- COLUMN SELECTOR -->
+        <div id="columnSelectorArea">
+            <div class="column-selector-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>
+                Selecciona la columna que contiene los códigos de barras
+            </div>
+            <div class="columns-grid" id="columnChips"></div>
+            <div class="preview-table" id="previewTableWrap"></div>
+            <div style="display: flex; gap: 0.75rem; margin-top: 0.75rem;">
+                <button class="btn btn-success" id="importColBtn" disabled>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                    Importar columna seleccionada
+                </button>
+                <button class="btn btn-ghost" id="cancelColBtn">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MANUAL -->
+    <div class="section">
+        <div class="section-title">Agregar Código Manualmente</div>
+        <div class="input-row">
+            <input type="text" id="manualCode" placeholder="Ingresa un código...">
+            <button id="addBtn" class="btn btn-accent">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                Agregar
+            </button>
+        </div>
+    </div>
+
+    <!-- CUSTOMIZATION -->
+    <div class="toggle-section">
+        <div class="toggle-header" id="customizationToggle">
+            <div class="toggle-header-left">
+                <div class="icon-box">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M12 1v4m0 14v4m9.07-15.07l-2.83 2.83M5.76 18.24l-2.83 2.83M23 12h-4M5 12H1m15.07 7.07l-2.83-2.83M8.76 8.76L5.93 5.93"/>
+                    </svg>
+                </div>
+                Personalización Avanzada
+                <span id="activePresetBadge" style="font-size:0.7rem;font-family:var(--mono);background:rgba(108,99,255,0.15);color:var(--accent);padding:0.15rem 0.6rem;border-radius:100px;font-weight:400;margin-left:0.25rem;display:none;"></span>
+            </div>
+            <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 12 15 18 9"/>
+            </svg>
+        </div>
+
+        <div class="toggle-body" id="customizationBody">
+
+            <!-- PRESETS -->
+            <div class="cust-presets">
+                <div class="cust-presets-title">⚡ Estilos rápidos</div>
+                <div class="presets-grid" id="presetsGrid"></div>
+            </div>
+
+            <!-- TABS -->
+            <div class="cust-tabs">
+                <div class="cust-tab active" data-tab="dims">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                    Dimensiones
+                </div>
+                <div class="cust-tab" data-tab="colors">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="6.5" cy="7" r="2.5"/><circle cx="17" cy="15" r="2.5"/><circle cx="7" cy="16" r="2.5"/><path d="M12 22c-4.97 0-9-2.69-9-6 0-2.5 2-4.5 5-5.5"/></svg>
+                    Colores
+                </div>
+                <div class="cust-tab" data-tab="text">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+                    Texto
+                </div>
+                <div class="cust-tab" data-tab="border">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="4"/></svg>
+                    Bordes
+                </div>
+            </div>
+
+            <!-- PANEL: DIMENSIONES -->
+            <div class="cust-panel active" id="panel-dims">
+                <div class="slider-group">
+                    <div class="slider-label-row">
+                        <span class="slider-label">Grosor de barras</span>
+                        <span class="slider-value" id="val-barcodeWidth">2</span>
+                    </div>
+                    <input type="range" id="barcodeWidth" min="1" max="5" step="0.5" value="2">
+                    <input type="number" id="barcodeWidthNum" min="1" max="5" step="0.5" value="2" style="display:none">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label-row">
+                        <span class="slider-label">Altura del código (px)</span>
+                        <span class="slider-value" id="val-barcodeHeight">100px</span>
+                    </div>
+                    <input type="range" id="barcodeHeight" min="30" max="300" step="5" value="100">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label-row">
+                        <span class="slider-label">Margen interno (px)</span>
+                        <span class="slider-value" id="val-margin">10px</span>
+                    </div>
+                    <input type="range" id="margin" min="0" max="60" step="2" value="10">
+                </div>
+            </div>
+
+            <!-- PANEL: COLORES -->
+            <div class="cust-panel" id="panel-colors">
+                <div class="color-field">
+                    <div class="color-field-label">Color de fondo</div>
+                    <div class="color-row">
+                        <div class="color-picker-wrap">
+                            <input type="color" id="bgColor" value="#ffffff">
+                        </div>
+                        <div class="color-swatches" id="swatches-bg"></div>
+                        <input type="text" class="color-hex-input" id="bgColorHex" value="#FFFFFF" maxlength="7" placeholder="#FFFFFF">
+                    </div>
+                </div>
+                <div class="color-field">
+                    <div class="color-field-label">Color de barras</div>
+                    <div class="color-row">
+                        <div class="color-picker-wrap">
+                            <input type="color" id="lineColor" value="#000000">
+                        </div>
+                        <div class="color-swatches" id="swatches-line"></div>
+                        <input type="text" class="color-hex-input" id="lineColorHex" value="#000000" maxlength="7" placeholder="#000000">
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANEL: TEXTO -->
+            <div class="cust-panel" id="panel-text">
+                <div class="toggle-switch-row">
+                    <div>
+                        <div class="toggle-switch-label">Mostrar valor del código</div>
+                        <div class="toggle-switch-sub">Imprime el número/texto bajo el código de barras</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="displayValue" checked>
+                        <div class="toggle-track"></div>
+                    </label>
+                </div>
+                <div style="margin-top: 1rem;">
+                    <div class="slider-group">
+                        <div class="slider-label-row">
+                            <span class="slider-label">Tamaño de fuente del código (px)</span>
+                            <span class="slider-value" id="val-fontSize">14px</span>
+                        </div>
+                        <input type="range" id="fontSize" min="6" max="32" step="1" value="14">
+                    </div>
+                    <div class="panel-text-group">
+                        <label>Texto superior personalizado</label>
+                        <input type="text" id="textTop" placeholder="Ej: Mi Empresa S.A.">
+                    </div>
+                    <div class="panel-text-group">
+                        <label>Texto inferior personalizado</label>
+                        <input type="text" id="textBottom" placeholder="Ej: www.miempresa.com">
+                    </div>
+                    <div class="slider-group">
+                        <div class="slider-label-row">
+                            <span class="slider-label">Tamaño del texto extra (px)</span>
+                            <span class="slider-value" id="val-textSize">12px</span>
+                        </div>
+                        <input type="range" id="textSize" min="7" max="28" step="1" value="12">
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANEL: BORDES -->
+            <div class="cust-panel" id="panel-border">
+                <div class="slider-group">
+                    <div class="slider-label-row">
+                        <span class="slider-label">Grosor del contorno (px)</span>
+                        <span class="slider-value" id="val-borderWidth">0px</span>
+                    </div>
+                    <input type="range" id="borderWidth" min="0" max="12" step="1" value="0">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label-row">
+                        <span class="slider-label">Redondeo de esquinas (px)</span>
+                        <span class="slider-value" id="val-borderRadius">15px</span>
+                    </div>
+                    <input type="range" id="borderRadius" min="0" max="60" step="2" value="15">
+                </div>
+                <div class="color-field" style="margin-top: 0.5rem;">
+                    <div class="color-field-label">Color del contorno</div>
+                    <div class="color-row">
+                        <div class="color-picker-wrap">
+                            <input type="color" id="borderColor" value="#000000">
+                        </div>
+                        <div class="color-swatches" id="swatches-border"></div>
+                        <input type="text" class="color-hex-input" id="borderColorHex" value="#000000" maxlength="7" placeholder="#000000">
+                    </div>
+                </div>
+            </div>
+
+            <!-- LIVE PREVIEW -->
+            <div class="cust-preview-wrap">
+                <div class="cust-preview-header">
+                    <span class="cust-preview-title">Vista previa en vivo</span>
+                    <div class="preview-bg-toggle">
+                        <div class="preview-bg-btn active" data-bg="#1a1a2e" style="background:#1a1a2e;" title="Fondo oscuro"></div>
+                        <div class="preview-bg-btn" data-bg="#f0f0f0" style="background:#f0f0f0;" title="Fondo claro"></div>
+                        <div class="preview-bg-btn" data-bg="repeating-conic-gradient(#888 0% 25%, #aaa 0% 50%) 0 0 / 12px 12px" style="background: repeating-conic-gradient(#666 0% 25%, #888 0% 50%) 0 0 / 12px 12px;" title="Transparente"></div>
+                    </div>
+                </div>
+                <div class="preview-stage" id="previewStage" style="background: #1a1a2e;">
+                    <canvas id="previewCanvas"></canvas>
+                </div>
+                <div class="preview-meta" id="previewMeta">
+                    <div class="preview-meta-item">Ancho: <span id="meta-w">—</span></div>
+                    <div class="preview-meta-item">Alto: <span id="meta-h">—</span></div>
+                    <div class="preview-meta-item">Formato: <span id="meta-fmt">CODE128</span></div>
+                </div>
+            </div>
+
+            <!-- ACTIONS -->
+            <div class="cust-actions">
+                <button id="applyCustomization" class="btn btn-accent">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                    Aplicar a todos
+                </button>
+                <button id="resetCustomization" class="btn btn-ghost btn-xs">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                    Restablecer
+                </button>
+                <button id="exportSettings" class="btn btn-ghost btn-xs">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                    Exportar config
+                </button>
+                <label class="btn btn-ghost btn-xs" for="importSettingsFile" style="cursor:pointer; margin: 0;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                    Importar config
+                </label>
+                <input type="file" id="importSettingsFile" accept=".json" style="display:none;">
+            </div>
+        </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div id="results-section">
+        <div class="section">
+            <div class="results-header">
+                <div class="results-title">
+                    Códigos de Barras Generados
+                    <span class="count-badge" id="codeCount">0</span>
+                    <span style="font-size: 0.75rem; color: var(--text3); font-family: var(--mono); margin-left: 0.5rem;" id="loadedInfo"></span>
+                </div>
+                <div class="results-actions">
+                    <button id="downloadAllBtn" class="btn btn-success">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                        </svg>
+                        Descargar ZIP
+                    </button>
+                    <button id="clearAllBtn" class="btn btn-danger">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                        Limpiar Todo
+                    </button>
+                </div>
+            </div>
+
+            <div id="barcodeGrid" class="bc-grid"></div>
+
+            <div id="paginationControls" class="pagination" style="display:none;">
+                <button id="firstPageBtn">Primera</button>
+                <button id="prevPageBtn">Anterior</button>
+                <span class="pagination-info">Pág. <span id="currentPageNum">1</span> / <span id="totalPages">1</span></span>
+                <button id="nextPageBtn">Siguiente</button>
+                <button id="lastPageBtn">Última</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="emptyState" class="empty-state">
+        <div class="empty-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="2" y="4" width="3" height="16"/><rect x="7" y="4" width="1" height="16"/>
+                <rect x="10" y="4" width="2" height="16"/><rect x="14" y="4" width="1" height="16"/>
+                <rect x="17" y="4" width="3" height="16"/>
+            </svg>
+        </div>
+        <p>Sube un archivo o ingresa códigos manualmente para empezar</p>
+    </div>
+
+</div>
+
+<script>
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let codes = [];
+let barcodeType = 'CODE128';
+let currentPage = 1;
+let codesPerPage = 12;
+let pendingFileData = null; // { rows: [], headers: [], type: 'excel'|'delimited' }
+let selectedColumnIndex = -1;
+
+let customization = {
+    width: 2, height: 100, displayValue: true, fontSize: 14,
+    margin: 10, background: '#ffffff', lineColor: '#000000',
+    textTop: '', textBottom: '', textSize: 12,
+    borderWidth: 0, borderColor: '#000000', borderRadius: 15
+};
+
+// ─── DOM REFS ─────────────────────────────────────────────────────────────────
+const fileInput = document.getElementById('fileInput');
+const manualCodeInput = document.getElementById('manualCode');
+const addBtn = document.getElementById('addBtn');
+// const barcodeTypeSelect = document.getElementById('barcodeType'); // handled by card picker
+const resultsSection = document.getElementById('results-section');
+const emptyState = document.getElementById('emptyState');
+const barcodeGrid = document.getElementById('barcodeGrid');
+const codeCountEl = document.getElementById('codeCount');
+const loadedInfoEl = document.getElementById('loadedInfo');
+const downloadAllBtn = document.getElementById('downloadAllBtn');
+const clearAllBtn = document.getElementById('clearAllBtn');
+const firstPageBtn = document.getElementById('firstPageBtn');
+const prevPageBtn = document.getElementById('prevPageBtn');
+const nextPageBtn = document.getElementById('nextPageBtn');
+const lastPageBtn = document.getElementById('lastPageBtn');
+const currentPageNum = document.getElementById('currentPageNum');
+const totalPagesEl = document.getElementById('totalPages');
+const paginationControls = document.getElementById('paginationControls');
+const customizationToggle = document.getElementById('customizationToggle');
+const customizationBody = document.getElementById('customizationBody');
+const previewCanvas = document.getElementById('previewCanvas');
+const applyCustomizationBtn = document.getElementById('applyCustomization');
+const perPageSelect = document.getElementById('perPageSelect');
+const loadLimitInput = document.getElementById('loadLimitInput');
+const loadAllCheck = document.getElementById('loadAllCheck');
+const loadLimitDisplay = document.getElementById('loadLimitDisplay');
+const columnSelectorArea = document.getElementById('columnSelectorArea');
+const columnChips = document.getElementById('columnChips');
+const importColBtn = document.getElementById('importColBtn');
+const cancelColBtn = document.getElementById('cancelColBtn');
+const delimiterArea = document.getElementById('delimiterArea');
+const previewTableWrap = document.getElementById('previewTableWrap');
+
+// ─── TOAST ────────────────────────────────────────────────────────────────────
+function toast(msg, type = 'success') {
+    const container = document.getElementById('toast');
+    const el = document.createElement('div');
+    el.className = `toast-item ${type}`;
+    el.textContent = msg;
+    container.appendChild(el);
+    setTimeout(() => el.remove(), 3300);
+}
+
+// ─── TYPE PICKER ─────────────────────────────────────────────────────────────
+const FORMAT_META = {
+    CODE128:    { label: 'CODE128',    info: 'Acepta cualquier texto o números — ideal para uso general', warn: false },
+    CODE39:     { label: 'CODE39',     info: 'Acepta letras A–Z, dígitos 0–9 y símbolos: -. $/+%', warn: false },
+    CODE93:     { label: 'CODE93',     info: 'Acepta texto alfanumérico ASCII completo', warn: false },
+    codabar:    { label: 'CODABAR',    info: 'Solo dígitos y caracteres: - $ : / . + Empieza/termina con A B C D', warn: false },
+    EAN13:      { label: 'EAN-13',     info: '⚠ Requiere exactamente 13 dígitos numéricos', warn: true },
+    EAN8:       { label: 'EAN-8',      info: '⚠ Requiere exactamente 8 dígitos numéricos', warn: true },
+    UPC:        { label: 'UPC-A',      info: '⚠ Requiere exactamente 12 dígitos numéricos', warn: true },
+    UPCE:       { label: 'UPC-E',      info: '⚠ Requiere exactamente 8 dígitos (formato UPC comprimido)', warn: true },
+    EAN5:       { label: 'EAN-5',      info: '⚠ Requiere exactamente 5 dígitos numéricos', warn: true },
+    EAN2:       { label: 'EAN-2',      info: '⚠ Requiere exactamente 2 dígitos numéricos', warn: true },
+    ITF14:      { label: 'ITF-14',     info: '⚠ Requiere exactamente 14 dígitos numéricos', warn: true },
+    ITF:        { label: 'ITF',        info: '⚠ Solo dígitos en cantidad par', warn: true },
+    MSI:        { label: 'MSI',        info: 'Solo dígitos numéricos, longitud libre', warn: false },
+    pharmacode: { label: 'PHARMACODE', info: '⚠ Solo números entre 3 y 131070', warn: true },
+    QR:         { label: 'QR Code',    info: 'Acepta texto, URLs, contactos, emails — hasta ~4000 caracteres', warn: false, qr: true },
+};
+
+function selectBarcodeType(card) {
+    const old = barcodeType;
+    const newType = card.dataset.type;
+
+    document.querySelectorAll('.type-card').forEach(c => c.classList.remove('active'));
+    card.classList.add('active');
+    barcodeType = newType;
+
+    // Update format info box
+    const meta = FORMAT_META[newType] || { info: 'Acepta texto o números', warn: false };
+    const infoEl = document.getElementById('formatInfo');
+    infoEl.textContent = meta.info;
+    infoEl.className = 'format-info-box' + (meta.warn ? ' warn' : meta.qr ? ' qr' : '');
+
+    // Show/hide QR options
+    const qrOpts = document.getElementById('qrOptions');
+    if (newType === 'QR') {
+        qrOpts.classList.add('show');
+    } else {
+        qrOpts.classList.remove('show');
+    }
+
+    // Filter existing codes if switching
+    if (codes.length > 0) {
+        const valid = codes.filter(c => isValidForFormat(c.value, newType));
+        const bad = codes.length - valid.length;
+        if (bad > 0 && !confirm(`⚠ Cambio a ${newType}: ${bad} de ${codes.length} códigos no son válidos y serán eliminados. ¿Continuar?`)) {
+            // Revert
+            barcodeType = old;
+            document.querySelectorAll('.type-card').forEach(c => c.classList.remove('active'));
+            document.querySelector(`.type-card[data-type="${old}"]`)?.classList.add('active');
+            const oldMeta = FORMAT_META[old] || { info: '', warn: false };
+            infoEl.textContent = oldMeta.info;
+            infoEl.className = 'format-info-box' + (oldMeta.warn ? ' warn' : oldMeta.qr ? ' qr' : '');
+            document.getElementById('qrOptions').classList.toggle('show', old === 'QR');
+            return;
         }
+        codes = valid;
+        currentPage = 1;
+    }
+    updatePreview();
+    renderBarcodes();
+}
+window.selectBarcodeType = selectBarcodeType;
 
-        function getValidationMessage(format) {
-            const messages = {
-                'EAN13': 'requiere exactamente 13 dígitos',
-                'UPC': 'requiere exactamente 12 dígitos',
-                'ITF14': 'requiere exactamente 14 dígitos',
-                'CODE39': 'solo acepta letras, números y estos símbolos: -. $/+%',
-                'CODE128': 'acepta cualquier texto'
-            };
-            return messages[format] || '';
-        }
+// ─── FORMAT VALIDATION ────────────────────────────────────────────────────────
+function isValidForFormat(value, format) {
+    const v = value.replace(/\s/g, '');
+    switch(format) {
+        case 'EAN13':      return /^\d{13}$/.test(v);
+        case 'EAN8':       return /^\d{8}$/.test(v);
+        case 'UPC':        return /^\d{12}$/.test(v);
+        case 'UPCE':       return /^\d{8}$/.test(v);
+        case 'EAN5':       return /^\d{5}$/.test(v);
+        case 'EAN2':       return /^\d{2}$/.test(v);
+        case 'ITF14':      return /^\d{14}$/.test(v);
+        case 'ITF':        return /^\d+$/.test(v) && v.length % 2 === 0;
+        case 'MSI':        return /^\d+$/.test(v) && v.length > 0;
+        case 'pharmacode': return /^\d+$/.test(v) && parseInt(v) >= 3 && parseInt(v) <= 131070;
+        case 'CODE39':     return /^[A-Z0-9\-. $/+%]+$/i.test(v) && v.length > 0;
+        case 'CODE93':     return v.length > 0;
+        case 'codabar':    return /^[A-Da-d][0-9\-$:/.+]+[A-Da-d]$/.test(v);
+        case 'QR':         return v.length > 0 && v.length <= 4296;
+        default:           return v.length > 0;
+    }
+}
 
-        function updateFormatInfo() {
-            const formatInfo = document.getElementById('formatInfo');
-            const messages = {
-                'CODE128': '💡 CODE128 acepta cualquier texto o números',
-                'EAN13': '⚠️ Solo acepta códigos con exactamente 13 dígitos',
-                'UPC': '⚠️ Solo acepta códigos con exactamente 12 dígitos',
-                'CODE39': '💡 Acepta letras, números y símbolos: -. $/+%',
-                'ITF14': '⚠️ Solo acepta códigos con exactamente 14 dígitos'
-            };
-            formatInfo.textContent = messages[barcodeType] || '';
-        }
+function getValidationMessage(format) {
+    const m = {
+        EAN13: 'requiere exactamente 13 dígitos',
+        EAN8: 'requiere exactamente 8 dígitos',
+        UPC: 'requiere exactamente 12 dígitos',
+        UPCE: 'requiere exactamente 8 dígitos',
+        EAN5: 'requiere exactamente 5 dígitos',
+        EAN2: 'requiere exactamente 2 dígitos',
+        ITF14: 'requiere exactamente 14 dígitos',
+        ITF: 'requiere dígitos en cantidad par',
+        MSI: 'solo acepta dígitos numéricos',
+        pharmacode: 'requiere número entre 3 y 131070',
+        CODE39: 'solo letras A–Z, dígitos 0–9 y símbolos: -. $/+%',
+        codabar: 'formato: [A-D][datos][A-D] — ej: A123456A',
+        QR: 'texto demasiado largo (máx. 4296 chars)',
+        CODE128: 'acepta cualquier texto',
+        CODE93: 'acepta cualquier texto ASCII',
+    };
+    return m[format] || 'código inválido para este formato';
+}
 
-        function generateBarcodeWithCustomization(canvas, value, options) {
-            const ctx = canvas.getContext('2d');
-            
-            // Calcular espacio necesario para textos extra
-            let extraHeight = 0;
-            if (options.textTop) extraHeight += options.textSize + 15;
-            if (options.textBottom) extraHeight += options.textSize + 15;
-            
-            // Crear canvas temporal para generar el código de barras primero
-            const tempCanvas = document.createElement('canvas');
-            try {
-                JsBarcode(tempCanvas, value, {
-                    format: barcodeType,
-                    width: options.width,
-                    height: options.height,
-                    displayValue: options.displayValue,
-                    fontSize: options.fontSize,
-                    margin: 0,
-                    background: options.background,
-                    lineColor: options.lineColor
-                });
-            } catch (error) {
-                console.error('Error generando código de barras:', error);
-                throw error;
-            }
-            
-            // Validar que el canvas temporal se generó correctamente
-            if (tempCanvas.width === 0 || tempCanvas.height === 0) {
-                throw new Error('El código de barras no se pudo generar correctamente');
-            }
-            
-            // Calcular dimensiones del canvas final con márgenes y contorno
-            const totalMargin = options.margin + options.borderWidth;
-            canvas.width = tempCanvas.width + (totalMargin * 2);
-            canvas.height = tempCanvas.height + extraHeight + (totalMargin * 2);
-            
-            // Dibujar fondo con esquinas redondeadas
-            ctx.fillStyle = options.background;
-            roundRect(ctx, 0, 0, canvas.width, canvas.height, options.borderRadius);
-            ctx.fill();
-            
-            // Dibujar contorno con esquinas redondeadas si está habilitado
-            if (options.borderWidth > 0) {
-                ctx.strokeStyle = options.borderColor;
-                ctx.lineWidth = options.borderWidth;
-                const offset = options.borderWidth / 2;
-                roundRect(
-                    ctx,
-                    offset,
-                    offset,
-                    canvas.width - options.borderWidth,
-                    canvas.height - options.borderWidth,
-                    Math.max(0, options.borderRadius - offset)
-                );
-                ctx.stroke();
-            }
-            
-            let yOffset = totalMargin;
-            
-            // Texto superior
-            if (options.textTop) {
-                ctx.fillStyle = options.lineColor;
-                ctx.font = 'bold ' + options.textSize + 'px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText(options.textTop, canvas.width / 2, yOffset + options.textSize);
-                yOffset += options.textSize + 15;
-            }
-            
-            // Dibujar el código de barras centrado
-            const x = (canvas.width - tempCanvas.width) / 2;
-            ctx.drawImage(tempCanvas, x, yOffset);
-            yOffset += tempCanvas.height;
-            
-            // Texto inferior
-            if (options.textBottom) {
-                yOffset += 10;
-                ctx.fillStyle = options.lineColor;
-                ctx.font = options.textSize + 'px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText(options.textBottom, canvas.width / 2, yOffset + options.textSize);
-            }
-        }
+function updateFormatInfo() {
+    const meta = FORMAT_META[barcodeType];
+    if (!meta) return;
+    const infoEl = document.getElementById('formatInfo');
+    if (infoEl) {
+        infoEl.textContent = meta.info;
+        infoEl.className = 'format-info-box' + (meta.warn ? ' warn' : meta.qr ? ' qr' : '');
+    }
+}
 
-        // Función auxiliar para dibujar rectángulos con esquinas redondeadas
-        function roundRect(ctx, x, y, width, height, radius) {
-            if (width < 2 * radius) radius = width / 2;
-            if (height < 2 * radius) radius = height / 2;
-            ctx.beginPath();
-            ctx.moveTo(x + radius, y);
-            ctx.arcTo(x + width, y, x + width, y + height, radius);
-            ctx.arcTo(x + width, y + height, x, y + height, radius);
-            ctx.arcTo(x, y + height, x, y, radius);
-            ctx.arcTo(x, y, x + width, y, radius);
-            ctx.closePath();
-        }
+// ─── BARCODE DRAWING ──────────────────────────────────────────────────────────
+function roundRect(ctx, x, y, w, h, r) {
+    if (w < 2*r) r = w/2;
+    if (h < 2*r) r = h/2;
+    ctx.beginPath();
+    ctx.moveTo(x+r, y);
+    ctx.arcTo(x+w, y, x+w, y+h, r);
+    ctx.arcTo(x+w, y+h, x, y+h, r);
+    ctx.arcTo(x, y+h, x, y, r);
+    ctx.arcTo(x, y, x+w, y, r);
+    ctx.closePath();
+}
 
-        function updatePreview() {
-            if (!previewCanvas) return;
-            
-            customization.width = parseFloat(barcodeWidthInput.value);
-            customization.height = parseInt(barcodeHeightInput.value);
-            customization.fontSize = parseInt(fontSizeInput.value);
-            customization.margin = parseInt(marginInput.value);
-            customization.background = bgColorInput.value;
-            customization.lineColor = lineColorInput.value;
-            customization.displayValue = displayValueInput.checked;
-            customization.textTop = textTopInput.value;
-            customization.textBottom = textBottomInput.value;
-            customization.textSize = parseInt(textSizeInput.value);
-            customization.borderWidth = parseInt(borderWidthInput.value);
-            customization.borderColor = borderColorInput.value;
-            customization.borderRadius = parseInt(borderRadiusInput.value);
-            
-            try {
-                generateBarcodeWithCustomization(previewCanvas, '1234567890', customization);
-            } catch (error) {
-                console.error('Error en preview:', error);
-            }
-        }
+function generateQR(value, opts) {
+    return new Promise((resolve, reject) => {
+        const size = parseInt(document.getElementById('qrSize')?.value || 200);
+        const errLevel = document.getElementById('qrErrorLevel')?.value || 'M';
+        const margin = parseInt(document.getElementById('qrMargin')?.value || 4);
 
-        function addManualCode() {
-            const value = manualCodeInput.value.trim();
-            if (value) {
-                const cleanValue = value.replace(/\s/g, '');
-                
-                if (!isValidForFormat(cleanValue, barcodeType)) {
-                    alert('❌ Código inválido para ' + barcodeType + '\n\nEl código "' + value + '" ' + getValidationMessage(barcodeType) + '.');
-                    return;
-                }
-                
-                codes.push({
-                    id: Date.now(),
-                    value: cleanValue,
-                    original: value
-                });
-                manualCodeInput.value = '';
-                
-                currentPage = Math.ceil(codes.length / codesPerPage);
-                renderBarcodes();
-            }
-        }
+        const holder = document.createElement('div');
+        holder.style.cssText = 'position:absolute;left:-9999px;top:-9999px;';
+        document.body.appendChild(holder);
 
-        function deleteCode(id) {
-            codes = codes.filter(function(code) {
-                return code.id !== id;
+        try {
+            const qr = new QRCode(holder, {
+                text: value,
+                width: size,
+                height: size,
+                colorDark: opts.lineColor,
+                colorLight: opts.background,
+                correctLevel: QRCode.CorrectLevel[errLevel] || QRCode.CorrectLevel.M,
             });
-            
-            const totalPages = Math.ceil(codes.length / codesPerPage);
-            if (currentPage > totalPages && totalPages > 0) {
-                currentPage = totalPages;
-            }
-            
-            renderBarcodes();
+
+            setTimeout(() => {
+                try {
+                    const qrCanvas = holder.querySelector('canvas');
+                    if (!qrCanvas) { document.body.removeChild(holder); reject(new Error('No canvas')); return; }
+
+                    // Build final canvas with border + margin + texts
+                    const finalCanvas = document.createElement('canvas');
+                    const ctx = finalCanvas.getContext('2d');
+                    let extraH = 0;
+                    if (opts.textTop) extraH += opts.textSize + 15;
+                    if (opts.textBottom) extraH += opts.textSize + 15;
+                    if (opts.displayValue) extraH += opts.fontSize + 10;
+
+                    const tm = opts.margin + opts.borderWidth;
+                    finalCanvas.width = qrCanvas.width + tm * 2;
+                    finalCanvas.height = qrCanvas.height + extraH + tm * 2;
+
+                    // Background
+                    ctx.fillStyle = opts.background;
+                    roundRect(ctx, 0, 0, finalCanvas.width, finalCanvas.height, opts.borderRadius);
+                    ctx.fill();
+
+                    // Border
+                    if (opts.borderWidth > 0) {
+                        ctx.strokeStyle = opts.borderColor;
+                        ctx.lineWidth = opts.borderWidth;
+                        const off = opts.borderWidth / 2;
+                        roundRect(ctx, off, off, finalCanvas.width - opts.borderWidth, finalCanvas.height - opts.borderWidth, Math.max(0, opts.borderRadius - off));
+                        ctx.stroke();
+                    }
+
+                    let yOff = tm;
+                    if (opts.textTop) {
+                        ctx.fillStyle = opts.lineColor;
+                        ctx.font = 'bold ' + opts.textSize + 'px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(opts.textTop, finalCanvas.width / 2, yOff + opts.textSize);
+                        yOff += opts.textSize + 15;
+                    }
+
+                    ctx.drawImage(qrCanvas, tm, yOff);
+                    yOff += qrCanvas.height;
+
+                    if (opts.displayValue) {
+                        yOff += 8;
+                        ctx.fillStyle = opts.lineColor;
+                        ctx.font = opts.fontSize + 'px Arial';
+                        ctx.textAlign = 'center';
+                        const displayText = value.length > 40 ? value.substring(0, 37) + '...' : value;
+                        ctx.fillText(displayText, finalCanvas.width / 2, yOff + opts.fontSize);
+                        yOff += opts.fontSize + 2;
+                    }
+
+                    if (opts.textBottom) {
+                        yOff += 10;
+                        ctx.fillStyle = opts.lineColor;
+                        ctx.font = opts.textSize + 'px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(opts.textBottom, finalCanvas.width / 2, yOff + opts.textSize);
+                    }
+
+                    document.body.removeChild(holder);
+                    resolve(finalCanvas);
+                } catch(e) {
+                    try { document.body.removeChild(holder); } catch(_) {}
+                    reject(e);
+                }
+            }, 80);
+        } catch(e) {
+            try { document.body.removeChild(holder); } catch(_) {}
+            reject(e);
         }
+    });
+}
 
-        function downloadBarcode(canvas, codeValue) {
-            const url = canvas.toDataURL('image/png');
-            const link = document.createElement('a');
-            link.download = 'barcode_' + codeValue + '.png';
-            link.href = url;
-            link.click();
-        }
+function generateBarcodeWithCustomization(canvas, value, opts) {
+    const ctx = canvas.getContext('2d');
+    let extraH = 0;
+    if (opts.textTop) extraH += opts.textSize + 15;
+    if (opts.textBottom) extraH += opts.textSize + 15;
+    const tmpC = document.createElement('canvas');
+    JsBarcode(tmpC, value, {
+        format: barcodeType, width: opts.width, height: opts.height,
+        displayValue: opts.displayValue, fontSize: opts.fontSize,
+        margin: 0, background: opts.background, lineColor: opts.lineColor
+    });
+    if (!tmpC.width || !tmpC.height) throw new Error('Invalid canvas');
+    const tm = opts.margin + opts.borderWidth;
+    canvas.width = tmpC.width + tm*2;
+    canvas.height = tmpC.height + extraH + tm*2;
+    ctx.fillStyle = opts.background;
+    roundRect(ctx, 0, 0, canvas.width, canvas.height, opts.borderRadius);
+    ctx.fill();
+    if (opts.borderWidth > 0) {
+        ctx.strokeStyle = opts.borderColor;
+        ctx.lineWidth = opts.borderWidth;
+        const off = opts.borderWidth/2;
+        roundRect(ctx, off, off, canvas.width-opts.borderWidth, canvas.height-opts.borderWidth, Math.max(0, opts.borderRadius-off));
+        ctx.stroke();
+    }
+    let yOff = tm;
+    if (opts.textTop) {
+        ctx.fillStyle = opts.lineColor;
+        ctx.font = 'bold ' + opts.textSize + 'px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(opts.textTop, canvas.width/2, yOff + opts.textSize);
+        yOff += opts.textSize + 15;
+    }
+    ctx.drawImage(tmpC, (canvas.width - tmpC.width)/2, yOff);
+    yOff += tmpC.height;
+    if (opts.textBottom) {
+        yOff += 10;
+        ctx.fillStyle = opts.lineColor;
+        ctx.font = opts.textSize + 'px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(opts.textBottom, canvas.width/2, yOff + opts.textSize);
+    }
+}
 
-        function renderBarcodes() {
-            if (codes.length === 0) {
-                resultsSection.classList.remove('show');
-                emptyState.style.display = 'block';
-                return;
-            }
+// Async wrapper that handles both QR and 1D
+async function generateCode(canvas, value, opts) {
+    if (barcodeType === 'QR') {
+        const qrCanvas = await generateQR(value, opts);
+        canvas.width = qrCanvas.width;
+        canvas.height = qrCanvas.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(qrCanvas, 0, 0);
+    } else {
+        generateBarcodeWithCustomization(canvas, value, opts);
+    }
+}
 
-            resultsSection.classList.add('show');
-            emptyState.style.display = 'none';
-            codeCount.textContent = codes.length;
+function readCustomization() {
+    customization.width = parseFloat(document.getElementById('barcodeWidth').value);
+    customization.height = parseInt(document.getElementById('barcodeHeight').value);
+    customization.fontSize = parseInt(document.getElementById('fontSize').value);
+    customization.margin = parseInt(document.getElementById('margin').value);
+    customization.background = document.getElementById('bgColor').value;
+    customization.lineColor = document.getElementById('lineColor').value;
+    customization.displayValue = document.getElementById('displayValue').checked;
+    customization.textTop = document.getElementById('textTop').value;
+    customization.textBottom = document.getElementById('textBottom').value;
+    customization.textSize = parseInt(document.getElementById('textSize').value);
+    customization.borderWidth = parseInt(document.getElementById('borderWidth').value);
+    customization.borderColor = document.getElementById('borderColor').value;
+    customization.borderRadius = parseInt(document.getElementById('borderRadius').value);
+}
 
-            const totalPages = Math.ceil(codes.length / codesPerPage);
-            const startIndex = (currentPage - 1) * codesPerPage;
-            const endIndex = startIndex + codesPerPage;
-            const currentCodes = codes.slice(startIndex, endIndex);
+function updatePreview() {
+    readCustomization();
+    const canvas = document.getElementById('previewCanvas');
+    if (!canvas) return;
+    const previewValue = barcodeType === 'QR' ? 'https://ejemplo.com' : '1234567890';
+    generateCode(canvas, previewValue, customization).then(() => {
+        const mw = document.getElementById('meta-w');
+        const mh = document.getElementById('meta-h');
+        const mfmt = document.getElementById('meta-fmt');
+        if (mw) mw.textContent = canvas.width + 'px';
+        if (mh) mh.textContent = canvas.height + 'px';
+        if (mfmt) mfmt.textContent = barcodeType;
+    }).catch(() => {});
+}
 
-            currentPageNum.textContent = currentPage;
-            totalPagesEl.textContent = totalPages;
+// ─── DELIMITER DETECTION ─────────────────────────────────────────────────────
+function detectDelimiter(text) {
+    const lines = text.split(/\r?\n/).slice(0, 5).filter(l => l.trim());
+    const delims = [',', '\t', ';', '|'];
+    let best = null, bestCount = 0;
+    for (const d of delims) {
+        const counts = lines.map(l => l.split(d).length - 1);
+        const avg = counts.reduce((a,b)=>a+b,0)/counts.length;
+        if (avg > bestCount) { bestCount = avg; best = d; }
+    }
+    return bestCount >= 1 ? best : null;
+}
 
-            firstPageBtn.disabled = currentPage === 1;
-            prevPageBtn.disabled = currentPage === 1;
-            nextPageBtn.disabled = currentPage === totalPages;
-            lastPageBtn.disabled = currentPage === totalPages;
+function parseDelimited(text, delim) {
+    const lines = text.split(/\r?\n/).filter(l => l.trim());
+    if (!lines.length) return { headers: [], rows: [] };
+    const split = l => l.split(delim).map(c => c.trim().replace(/^["']|["']$/g,''));
+    const firstRow = split(lines[0]);
+    // Check if first row looks like headers (non-numeric values)
+    const isHeader = firstRow.some(c => isNaN(c) && c.length > 0);
+    let headers, rows;
+    if (isHeader) {
+        headers = firstRow;
+        rows = lines.slice(1).map(split);
+    } else {
+        headers = firstRow.map((_, i) => 'Columna ' + (i+1));
+        rows = lines.map(split);
+    }
+    return { headers, rows };
+}
 
-            if (codes.length <= codesPerPage) {
-                paginationControls.style.display = 'none';
+// ─── COLUMN SELECTOR UI ───────────────────────────────────────────────────────
+function showColumnSelector(headers, rows, type) {
+    pendingFileData = { headers, rows, type };
+    selectedColumnIndex = -1;
+    importColBtn.disabled = true;
+
+    columnChips.innerHTML = '';
+    headers.forEach((h, i) => {
+        const colValues = rows.slice(0,5).map(r => r[i] || '').filter(Boolean);
+        const chip = document.createElement('button');
+        chip.className = 'column-chip';
+        chip.dataset.idx = i;
+        chip.innerHTML = `${h} <span class="chip-count">${rows.length}</span>`;
+        chip.addEventListener('click', () => selectColumn(i, headers, rows));
+        columnChips.appendChild(chip);
+    });
+
+    // Preview table
+    const maxPreviewRows = Math.min(5, rows.length);
+    let tableHtml = '<table><thead><tr>';
+    headers.forEach(h => { tableHtml += `<th>${h}</th>`; });
+    tableHtml += '</tr></thead><tbody>';
+    for (let i = 0; i < maxPreviewRows; i++) {
+        tableHtml += '<tr>';
+        headers.forEach((_, j) => { tableHtml += `<td>${rows[i][j] !== undefined ? rows[i][j] : ''}</td>`; });
+        tableHtml += '</tr>';
+    }
+    tableHtml += '</tbody></table>';
+    previewTableWrap.innerHTML = tableHtml;
+
+    columnSelectorArea.classList.add('show');
+    columnSelectorArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function selectColumn(idx, headers, rows) {
+    selectedColumnIndex = idx;
+    // Update chips
+    document.querySelectorAll('.column-chip').forEach((c, i) => {
+        c.classList.toggle('selected', i === idx);
+    });
+    // Highlight table column
+    const table = previewTableWrap.querySelector('table');
+    if (table) {
+        table.querySelectorAll('th').forEach((th, i) => th.classList.toggle('active-col', i === idx));
+        table.querySelectorAll('tr').forEach(tr => {
+            tr.querySelectorAll('td').forEach((td, i) => td.classList.toggle('active-col', i === idx));
+        });
+    }
+    importColBtn.disabled = false;
+}
+
+function importSelectedColumn() {
+    if (!pendingFileData || selectedColumnIndex < 0) return;
+    const { rows } = pendingFileData;
+    const loadAll = loadAllCheck.checked;
+    const limit = loadAll ? Infinity : parseInt(loadLimitInput.value) || 500;
+
+    const newCodes = [], invalidCodes = [];
+    let count = 0;
+    for (const row of rows) {
+        if (count >= limit) break;
+        const raw = row[selectedColumnIndex];
+        if (raw !== undefined && raw !== null && raw !== '') {
+            const original = String(raw).trim();
+            const clean = original.replace(/\s/g,'');
+            if (isValidForFormat(clean, barcodeType)) {
+                newCodes.push({ id: Date.now() + Math.random(), value: clean, original });
+                count++;
             } else {
-                paginationControls.style.display = 'flex';
-            }
-
-            barcodeGrid.innerHTML = '';
-
-            currentCodes.forEach(function(code, index) {
-                const globalIndex = startIndex + index;
-                
-                const card = document.createElement('div');
-                card.className = 'barcode-card';
-                
-                let displayInfo = '<span class="barcode-code">' + code.value + '</span>';
-                if (code.original && code.original !== code.value) {
-                    displayInfo = '<div><span class="barcode-code">' + code.value + '</span><div style="font-size: 0.75rem; color: #6B7280; margin-top: 0.25rem;">Original: ' + code.original + '</div></div>';
-                }
-                
-                card.innerHTML = '<div class="barcode-header">' + displayInfo + '<button class="btn-icon" onclick="deleteCode(' + code.id + ')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div><div class="barcode-container"><canvas id="canvas-' + code.id + '"></canvas></div><button class="btn btn-primary btn-small" style="width: 100%" onclick="downloadBarcode(document.getElementById(\'canvas-' + code.id + '\'), \'' + code.value + '\')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>Descargar</button>';
-                barcodeGrid.appendChild(card);
-
-                setTimeout(function() {
-                    const canvas = document.getElementById('canvas-' + code.id);
-                    if (canvas) {
-                        try {
-                            generateBarcodeWithCustomization(canvas, code.value, customization);
-                        } catch (error) {
-                            console.error('Error generando código de barras para ' + code.value + ':', error);
-                            canvas.parentElement.innerHTML = '<p style="color: #EF4444; text-align: center; padding: 20px; font-size: 0.875rem;">Error al generar código</p>';
-                        }
-                    }
-                }, 10);
-            });
-
-            if (currentPage > 1) {
-                resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                invalidCodes.push(original);
             }
         }
+    }
+    finishImport(newCodes, invalidCodes, rows.length);
+    columnSelectorArea.classList.remove('show');
+    delimiterArea.classList.remove('show');
+    pendingFileData = null;
+}
 
-        customizationToggle.addEventListener('click', function() {
-            customizationContent.classList.toggle('show');
-            const arrow = customizationToggle.querySelector('.arrow-icon');
-            arrow.classList.toggle('rotated');
-        });
+function finishImport(newCodes, invalidCodes, total) {
+    if (newCodes.length === 0) {
+        toast(`Ningún código válido para ${barcodeType}. ${invalidCodes.length} inválidos.`, 'error');
+        return;
+    }
+    codes.push(...newCodes);
+    currentPage = 1;
+    let msg = `✓ ${newCodes.length} códigos importados`;
+    if (invalidCodes.length > 0) msg += ` · ${invalidCodes.length} omitidos (formato inválido)`;
+    if (total > newCodes.length + invalidCodes.length)
+        msg += ` · limitado a ${newCodes.length + invalidCodes.length} de ${total}`;
+    toast(msg, newCodes.length > 0 ? 'success' : 'warning');
+    renderBarcodes();
+}
 
-        barcodeWidthInput.addEventListener('input', updatePreview);
-        barcodeHeightInput.addEventListener('input', updatePreview);
-        fontSizeInput.addEventListener('input', updatePreview);
-        marginInput.addEventListener('input', updatePreview);
-        bgColorInput.addEventListener('input', updatePreview);
-        lineColorInput.addEventListener('input', updatePreview);
-        displayValueInput.addEventListener('change', updatePreview);
-        textTopInput.addEventListener('input', updatePreview);
-        textBottomInput.addEventListener('input', updatePreview);
-        textSizeInput.addEventListener('input', updatePreview);
-        borderWidthInput.addEventListener('input', updatePreview);
-        borderColorInput.addEventListener('input', updatePreview);
-        borderRadiusInput.addEventListener('input', updatePreview);
+// ─── FILE READING ─────────────────────────────────────────────────────────────
+fileInput.addEventListener('change', async function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    e.target.value = '';
 
-        applyCustomizationBtn.addEventListener('click', function() {
-            updatePreview();
-            renderBarcodes();
-            alert('✅ Personalización aplicada a todos los códigos de barras');
-        });
+    try {
+        const fileName = file.name.toLowerCase();
+        const loadAll = loadAllCheck.checked;
+        const limit = loadAll ? Infinity : parseInt(loadLimitInput.value) || 500;
 
-        barcodeTypeSelect.addEventListener('change', function(e) {
-            const oldType = barcodeType;
-            barcodeType = e.target.value;
-            updateFormatInfo();
-            updatePreview();
-            
-            if (codes.length > 0) {
-                const validCodes = codes.filter(function(code) {
-                    return isValidForFormat(code.value, barcodeType);
-                });
-                const invalidCount = codes.length - validCodes.length;
-                
-                if (invalidCount > 0) {
-                    const mensaje = '⚠️ Cambio de formato: ' + oldType + ' → ' + barcodeType + '\n\n' + invalidCount + ' de ' + codes.length + ' códigos no son válidos.\n\n¿Continuar?';
-                    
-                    if (!confirm(mensaje)) {
-                        barcodeType = oldType;
-                        barcodeTypeSelect.value = oldType;
-                        updateFormatInfo();
-                        updatePreview();
-                        return;
-                    }
-                    
-                    codes = validCodes;
-                    currentPage = 1;
-                }
-            }
-            
-            renderBarcodes();
-        });
+        if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+            const data = await file.arrayBuffer();
+            const wb = XLSX.read(data);
+            const ws = wb.Sheets[wb.SheetNames[0]];
+            const jsonData = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+            if (!jsonData.length) { toast('Archivo vacío', 'error'); return; }
 
-        addBtn.addEventListener('click', addManualCode);
-        manualCodeInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') addManualCode();
-        });
-
-        fileInput.addEventListener('change', async function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            emptyState.innerHTML = '<p class="empty-state-title" style="color: #3B82F6;">⏳ Cargando archivo...</p>';
-            emptyState.style.display = 'block';
-
-            try {
-                console.log('Leyendo archivo:', file.name);
-                const fileName = file.name.toLowerCase();
-                const newCodes = [];
-                const invalidCodes = [];
-
-                if (fileName.endsWith('.txt')) {
-                    const text = await file.text();
-                    const lines = text.split(/\r?\n/);
-                    
-                    lines.forEach(function(line) {
-                        const trimmedLine = line.trim();
-                        if (trimmedLine !== '') {
-                            const cleanValue = trimmedLine.replace(/\s/g, '');
-                            
-                            if (isValidForFormat(cleanValue, barcodeType)) {
-                                newCodes.push({
-                                    id: Date.now() + Math.random(),
-                                    value: cleanValue,
-                                    original: trimmedLine
-                                });
-                            } else {
-                                invalidCodes.push(trimmedLine);
-                            }
-                        }
-                    });
-                    
-                } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
-                    const data = await file.arrayBuffer();
-                    const workbook = XLSX.read(data);
-                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-                    
-                    jsonData.flat().forEach(function(code) {
-                        if (code !== null && code !== undefined && code !== '') {
-                            const original = String(code).trim();
-                            const cleanValue = original.replace(/\s/g, '');
-                            
-                            if (isValidForFormat(cleanValue, barcodeType)) {
-                                newCodes.push({
-                                    id: Date.now() + Math.random(),
-                                    value: cleanValue,
-                                    original: original
-                                });
-                            } else {
-                                invalidCodes.push(original);
-                            }
-                        }
-                    });
+            // Check if multiple columns
+            const maxCols = Math.max(...jsonData.slice(0,5).map(r => r.length));
+            if (maxCols > 1) {
+                const firstRow = jsonData[0].map(String);
+                const isHeader = firstRow.some(c => isNaN(c) && c.trim().length > 0);
+                let headers, rows;
+                if (isHeader) {
+                    headers = firstRow.map(h => h || '(vacío)');
+                    rows = jsonData.slice(1).map(r => r.map(String));
                 } else {
-                    throw new Error('Formato no soportado');
+                    headers = firstRow.map((_, i) => 'Col. ' + (i+1));
+                    rows = jsonData.map(r => r.map(String));
                 }
+                showColumnSelector(headers, rows, 'excel');
+            } else {
+                // Single column — import directly
+                const newCodes = [], invalidCodes = [];
+                let count = 0;
+                for (const row of jsonData) {
+                    if (count >= limit) break;
+                    const raw = row[0];
+                    if (raw !== null && raw !== undefined && raw !== '') {
+                        const original = String(raw).trim();
+                        const clean = original.replace(/\s/g,'');
+                        if (isValidForFormat(clean, barcodeType)) {
+                            newCodes.push({ id: Date.now() + Math.random(), value: clean, original });
+                            count++;
+                        } else invalidCodes.push(original);
+                    }
+                }
+                finishImport(newCodes, invalidCodes, jsonData.length);
+            }
 
-                if (newCodes.length === 0 && invalidCodes.length === 0) {
-                    alert('No se encontraron códigos');
-                } else if (newCodes.length === 0 && invalidCodes.length > 0) {
-                    alert('❌ Ningún código válido para ' + barcodeType);
+        } else if (fileName.endsWith('.txt') || fileName.endsWith('.csv')) {
+            const text = await file.text();
+            const firstLine = text.split(/\r?\n/)[0] || '';
+            const detectedDelim = detectDelimiter(text);
+
+            if (detectedDelim) {
+                // Has delimiter — show selector
+                const parsed = parseDelimited(text, detectedDelim);
+                if (parsed.headers.length > 1) {
+                    // Show delimiter choice + column selector
+                    delimiterArea.classList.add('show');
+                    // Store raw text for re-parsing with different delimiter
+                    pendingFileData = { raw: text, detectedDelim };
+                    // Auto-show with detected delimiter
+                    showColumnSelector(parsed.headers, parsed.rows, 'delimited');
                 } else {
-                    codes.push(...newCodes);
-                    currentPage = 1;
-                    
-                    let mensaje = '✅ Se cargaron ' + newCodes.length + ' códigos';
-                    if (invalidCodes.length > 0) {
-                        mensaje += '\n\n⚠️ Se omitieron ' + invalidCodes.length + ' inválidos';
-                    }
-                    alert(mensaje);
-                    renderBarcodes();
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Error al leer archivo');
-            }
-            
-            e.target.value = '';
-        });
-
-        clearAllBtn.addEventListener('click', function() {
-            if (confirm('¿Eliminar todos los códigos?')) {
-                codes = [];
-                currentPage = 1;
-                renderBarcodes();
-            }
-        });
-
-        firstPageBtn.addEventListener('click', function() {
-            currentPage = 1;
-            renderBarcodes();
-        });
-
-        prevPageBtn.addEventListener('click', function() {
-            if (currentPage > 1) {
-                currentPage--;
-                renderBarcodes();
-            }
-        });
-
-        nextPageBtn.addEventListener('click', function() {
-            const totalPages = Math.ceil(codes.length / codesPerPage);
-            if (currentPage < totalPages) {
-                currentPage++;
-                renderBarcodes();
-            }
-        });
-
-        lastPageBtn.addEventListener('click', function() {
-            currentPage = Math.ceil(codes.length / codesPerPage);
-            renderBarcodes();
-        });
-
-        downloadAllBtn.addEventListener('click', async function() {
-            if (codes.length === 0) return;
-            
-            if (!confirm('¿Descargar ' + codes.length + ' códigos en ZIP?')) return;
-            
-            const originalText = downloadAllBtn.innerHTML;
-            downloadAllBtn.innerHTML = '<span>⏳ Generando...</span>';
-            downloadAllBtn.disabled = true;
-            
-            try {
-                const zip = new JSZip();
-                const tempCanvas = document.createElement('canvas');
-                
-                for (let i = 0; i < codes.length; i++) {
-                    const code = codes[i];
-                    
-                    try {
-                        generateBarcodeWithCustomization(tempCanvas, code.value, customization);
-                        
-                        const dataUrl = tempCanvas.toDataURL('image/png');
-                        const base64Data = dataUrl.split(',')[1];
-                        
-                        const fileName = 'barcode_' + code.value + '.png';
-                        zip.file(fileName, base64Data, { base64: true });
-                        
-                        if (i % 10 === 0 || i === codes.length - 1) {
-                            downloadAllBtn.innerHTML = '<span>⏳ ' + (i + 1) + '/' + codes.length + '</span>';
+                    // Single column delimited — import directly
+                    const newCodes = [], invalidCodes = [];
+                    let count = 0;
+                    for (const row of parsed.rows) {
+                        if (count >= limit) break;
+                        const raw = (row[0] || '').trim();
+                        if (raw) {
+                            const clean = raw.replace(/\s/g,'');
+                            if (isValidForFormat(clean, barcodeType)) {
+                                newCodes.push({ id: Date.now()+Math.random(), value: clean, original: raw });
+                                count++;
+                            } else invalidCodes.push(raw);
                         }
-                    } catch (error) {
-                        console.error('Error:', error);
+                    }
+                    finishImport(newCodes, invalidCodes, parsed.rows.length);
+                }
+            } else {
+                // Simple TXT — one code per line
+                const lines = text.split(/\r?\n/);
+                const newCodes = [], invalidCodes = [];
+                let count = 0;
+                for (const line of lines) {
+                    if (count >= limit) break;
+                    const trimmed = line.trim();
+                    if (trimmed) {
+                        const clean = trimmed.replace(/\s/g,'');
+                        if (isValidForFormat(clean, barcodeType)) {
+                            newCodes.push({ id: Date.now()+Math.random(), value: clean, original: trimmed });
+                            count++;
+                        } else invalidCodes.push(trimmed);
                     }
                 }
-                
-                downloadAllBtn.innerHTML = '<span>📦 Creando ZIP...</span>';
-                
-                const zipBlob = await zip.generateAsync({ 
-                    type: 'blob',
-                    compression: 'DEFLATE',
-                    compressionOptions: { level: 6 }
-                });
-                
-                const fecha = new Date().toISOString().slice(0, 10);
-                const nombreZip = 'codigos_barras_' + fecha + '.zip';
-                
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(zipBlob);
-                link.download = nombreZip;
-                link.click();
-                
-                URL.revokeObjectURL(link.href);
-                
-                alert('✅ Descargados ' + codes.length + ' códigos en ' + nombreZip);
-                
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Error al crear ZIP');
-            } finally {
-                downloadAllBtn.innerHTML = originalText;
-                downloadAllBtn.disabled = false;
+                finishImport(newCodes, invalidCodes, lines.length);
             }
-        });
+        }
+    } catch(err) {
+        console.error(err);
+        toast('Error al leer el archivo', 'error');
+    }
+});
 
-        window.deleteCode = deleteCode;
-        window.downloadBarcode = downloadBarcode;
+// Delimiter buttons
+document.querySelectorAll('.btn-delim').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.btn-delim').forEach(b => b.classList.remove('btn-accent'));
+        this.classList.add('btn-accent');
+        if (!pendingFileData || !pendingFileData.raw) return;
+        let delim = this.dataset.delim;
+        if (delim === 'auto') delim = detectDelimiter(pendingFileData.raw) || ',';
+        const parsed = parseDelimited(pendingFileData.raw, delim);
+        showColumnSelector(parsed.headers, parsed.rows, 'delimited');
+    });
+});
 
-        updateFormatInfo();
+importColBtn.addEventListener('click', importSelectedColumn);
+cancelColBtn.addEventListener('click', () => {
+    columnSelectorArea.classList.remove('show');
+    delimiterArea.classList.remove('show');
+    pendingFileData = null;
+});
+
+// ─── MANUAL ADD ───────────────────────────────────────────────────────────────
+function addManualCode() {
+    const value = manualCodeInput.value.trim();
+    if (!value) return;
+    const clean = value.replace(/\s/g,'');
+    if (!isValidForFormat(clean, barcodeType)) {
+        toast(`Código inválido para ${barcodeType}: ${getValidationMessage(barcodeType)}`, 'error');
+        return;
+    }
+    codes.push({ id: Date.now(), value: clean, original: value });
+    manualCodeInput.value = '';
+    currentPage = Math.ceil(codes.length / codesPerPage);
+    renderBarcodes();
+    toast('Código agregado', 'success');
+}
+
+addBtn.addEventListener('click', addManualCode);
+manualCodeInput.addEventListener('keypress', e => { if (e.key === 'Enter') addManualCode(); });
+
+// ─── DELETE ───────────────────────────────────────────────────────────────────
+function deleteCode(id) {
+    codes = codes.filter(c => c.id !== id);
+    const tp = Math.ceil(codes.length / codesPerPage);
+    if (currentPage > tp && tp > 0) currentPage = tp;
+    renderBarcodes();
+}
+window.deleteCode = deleteCode;
+
+// ─── DOWNLOAD SINGLE ─────────────────────────────────────────────────────────
+function downloadBarcode(canvas, codeValue) {
+    const url = canvas.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.download = 'barcode_' + codeValue + '.png';
+    a.href = url;
+    a.click();
+}
+window.downloadBarcode = downloadBarcode;
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function renderBarcodes() {
+    if (codes.length === 0) {
+        resultsSection.classList.remove('show');
+        emptyState.style.display = 'block';
+        return;
+    }
+    resultsSection.classList.add('show');
+    emptyState.style.display = 'none';
+    codeCountEl.textContent = codes.length;
+
+    const totalPages = Math.max(1, Math.ceil(codes.length / codesPerPage));
+    if (currentPage > totalPages) currentPage = totalPages;
+
+    const startIndex = (currentPage - 1) * codesPerPage;
+    const currentCodes = codes.slice(startIndex, startIndex + codesPerPage);
+
+    currentPageNum.textContent = currentPage;
+    totalPagesEl.textContent = totalPages;
+    firstPageBtn.disabled = currentPage === 1;
+    prevPageBtn.disabled = currentPage === 1;
+    nextPageBtn.disabled = currentPage === totalPages;
+    lastPageBtn.disabled = currentPage === totalPages;
+    paginationControls.style.display = codes.length <= codesPerPage ? 'none' : 'flex';
+
+    loadedInfoEl.textContent = codes.length > codesPerPage
+        ? `(mostrando ${startIndex+1}–${Math.min(startIndex+codesPerPage, codes.length)})`
+        : '';
+
+    barcodeGrid.innerHTML = '';
+    currentCodes.forEach(code => {
+        const card = document.createElement('div');
+        card.className = 'bc-card';
+        card.innerHTML = `
+            <div class="bc-card-header">
+                <div>
+                    <div class="bc-code">${code.value}</div>
+                    ${code.original !== code.value ? `<div style="font-size:0.7rem;color:var(--text3);margin-top:2px;">Original: ${code.original}</div>` : ''}
+                </div>
+                <button class="bc-delete-btn" onclick="deleteCode(${code.id})" title="Eliminar">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="bc-canvas-wrap" id="wrap-${code.id}"></div>
+            <button class="btn btn-accent" style="width:100%;padding:0.5rem;" onclick="downloadBarcode(document.getElementById('cv-${code.id}'), '${code.value}')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                Descargar
+            </button>`;
+        barcodeGrid.appendChild(card);
+
+        setTimeout(() => {
+            const wrap = document.getElementById('wrap-' + code.id);
+            if (!wrap) return;
+            const canvas = document.createElement('canvas');
+            canvas.id = 'cv-' + code.id;
+            canvas.style.width = '100%';
+            canvas.style.display = 'block';
+            wrap.appendChild(canvas);
+            generateCode(canvas, code.value, customization).catch(err => {
+                wrap.innerHTML = `<div class="bc-error">⚠ Error al generar</div>`;
+            });
+        }, 10);
+    });
+}
+
+// ─── PAGINATION ───────────────────────────────────────────────────────────────
+firstPageBtn.addEventListener('click', () => { currentPage = 1; renderBarcodes(); });
+prevPageBtn.addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderBarcodes(); } });
+nextPageBtn.addEventListener('click', () => {
+    const tp = Math.ceil(codes.length / codesPerPage);
+    if (currentPage < tp) { currentPage++; renderBarcodes(); }
+});
+lastPageBtn.addEventListener('click', () => { currentPage = Math.ceil(codes.length / codesPerPage); renderBarcodes(); });
+
+// ─── PER PAGE + LIMIT ─────────────────────────────────────────────────────────
+perPageSelect.addEventListener('change', () => {
+    codesPerPage = parseInt(perPageSelect.value);
+    currentPage = 1;
+    renderBarcodes();
+});
+
+loadLimitInput.addEventListener('input', () => {
+    loadLimitDisplay.textContent = loadAllCheck.checked ? '∞ (todo)' : loadLimitInput.value;
+});
+loadAllCheck.addEventListener('change', () => {
+    loadLimitInput.disabled = loadAllCheck.checked;
+    loadLimitDisplay.textContent = loadAllCheck.checked ? '∞ (todo)' : loadLimitInput.value;
+});
+
+// barcodeTypeSelect handled by selectBarcodeType()
+
+// QR option sliders
+['qrSize','qrMargin','qrErrorLevel'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', function() {
+        if (id === 'qrSize') { const v = document.getElementById('val-qrSize'); if(v) v.textContent = this.value + 'px'; }
+        if (id === 'qrMargin') { const v = document.getElementById('val-qrMargin'); if(v) v.textContent = this.value; }
         updatePreview();
-    </script>
+    });
+    el.addEventListener('change', updatePreview);
+});
+
+// ─── CUSTOMIZATION: PRESETS ───────────────────────────────────────────────────
+const PRESETS = [
+    { id:'classic', name:'Clásico', bg:'#ffffff', line:'#000000', bw:2, h:100, br:0, bord:0, borderClr:'#000000' },
+    { id:'dark',    name:'Dark',    bg:'#1a1a2e', line:'#00e5b0', bw:2, h:100, br:10, bord:2, borderClr:'#00e5b0' },
+    { id:'retail',  name:'Retail',  bg:'#fff9f0', line:'#c0392b', bw:2, h:80,  br:8,  bord:2, borderClr:'#c0392b' },
+    { id:'soft',    name:'Suave',   bg:'#f0f4ff', line:'#4c6ef5', bw:1.5, h:90, br:20, bord:1, borderClr:'#4c6ef5' },
+    { id:'corp',    name:'Corporativo', bg:'#f8fafc', line:'#0f172a', bw:2, h:110, br:4, bord:3, borderClr:'#0f172a' },
+    { id:'minimal', name:'Minimal', bg:'#ffffff', line:'#374151', bw:1.5, h:70, br:0, bord:0, borderClr:'#374151' },
+];
+
+const SWATCH_COLORS = {
+    bg:     ['#ffffff','#f8fafc','#fffdf0','#f0f4ff','#f0fff4','#1a1a2e','#0f172a','#111827'],
+    line:   ['#000000','#0f172a','#1e40af','#7c3aed','#065f46','#c0392b','#d97706','#374151'],
+    border: ['#000000','#374151','#1e40af','#7c3aed','#065f46','#c0392b','#00e5b0','#f59e0b'],
+};
+
+function buildPresets() {
+    const grid = document.getElementById('presetsGrid');
+    PRESETS.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'preset-card';
+        card.dataset.id = p.id;
+        // Generate a mini visual thumb
+        const thumbBg = p.bg;
+        const thumbLine = p.line;
+        const widths = [2,4,1,3,1,2,3,1,4,2,1,3,2,4,1,2];
+        let bars = '';
+        widths.forEach(w => {
+            bars += `<span style="width:${w}px;background:${thumbLine};"></span>`;
+        });
+        card.innerHTML = `
+            <div class="preset-thumb" style="background:${thumbBg};border-radius:${Math.max(0,p.br-2)}px ${Math.max(0,p.br-2)}px 0 0;">
+                <div class="pt-bar">${bars}</div>
+            </div>
+            <div class="preset-label">${p.name}</div>`;
+        card.addEventListener('click', () => applyPreset(p));
+        grid.appendChild(card);
+    });
+}
+
+function applyPreset(p) {
+    // Set all values
+    setSlider('barcodeWidth', p.bw);
+    setSlider('barcodeHeight', p.h);
+    setSlider('borderWidth', p.bord);
+    setSlider('borderRadius', p.br);
+    document.getElementById('bgColor').value = p.bg;
+    document.getElementById('lineColor').value = p.line;
+    document.getElementById('borderColor').value = p.borderClr;
+    document.getElementById('bgColorHex').value = p.bg.toUpperCase();
+    document.getElementById('lineColorHex').value = p.line.toUpperCase();
+    document.getElementById('borderColorHex').value = p.borderClr.toUpperCase();
+    updateAllSliderValues();
+    updateSwatchActive('swatches-bg', p.bg);
+    updateSwatchActive('swatches-line', p.line);
+    updateSwatchActive('swatches-border', p.borderClr);
+    // Mark active preset card
+    document.querySelectorAll('.preset-card').forEach(c => c.classList.toggle('active', c.dataset.id === p.id));
+    const badge = document.getElementById('activePresetBadge');
+    badge.textContent = p.name;
+    badge.style.display = 'inline-block';
+    updatePreview();
+    toast(`Preset "${p.name}" aplicado`, 'success');
+}
+
+function setSlider(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.value = val;
+}
+
+// ─── CUSTOMIZATION: COLOR SWATCHES ───────────────────────────────────────────
+function buildSwatches(containerId, colors, colorInputId, hexInputId) {
+    const wrap = document.getElementById(containerId);
+    colors.forEach(c => {
+        const s = document.createElement('div');
+        s.className = 'swatch';
+        s.style.background = c;
+        s.title = c;
+        s.addEventListener('click', () => {
+            document.getElementById(colorInputId).value = c;
+            document.getElementById(hexInputId).value = c.toUpperCase();
+            updateSwatchActive(containerId, c);
+            updatePreview();
+        });
+        wrap.appendChild(s);
+    });
+}
+
+function updateSwatchActive(containerId, color) {
+    document.querySelectorAll(`#${containerId} .swatch`).forEach(s => {
+        s.classList.toggle('active', s.style.background === hexToRgb(color) || s.title.toLowerCase() === color.toLowerCase());
+    });
+}
+
+function hexToRgb(hex) {
+    // Convert hex to rgb for comparison (browsers convert color to rgb)
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 1;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = hex;
+    ctx.fillRect(0,0,1,1);
+    const d = ctx.getImageData(0,0,1,1).data;
+    return `rgb(${d[0]}, ${d[1]}, ${d[2]})`;
+}
+
+// Sync color picker → hex input
+function syncColorToHex(colorId, hexId) {
+    document.getElementById(colorId).addEventListener('input', function() {
+        document.getElementById(hexId).value = this.value.toUpperCase();
+        updatePreview();
+    });
+    document.getElementById(hexId).addEventListener('input', function() {
+        const v = this.value.trim();
+        if (/^#[0-9a-fA-F]{6}$/.test(v)) {
+            document.getElementById(colorId).value = v;
+            updatePreview();
+        }
+    });
+}
+
+// ─── CUSTOMIZATION: SLIDERS ───────────────────────────────────────────────────
+const SLIDER_CONFIG = {
+    barcodeWidth:  { valId: 'val-barcodeWidth', fmt: v => v },
+    barcodeHeight: { valId: 'val-barcodeHeight', fmt: v => v + 'px' },
+    margin:        { valId: 'val-margin', fmt: v => v + 'px' },
+    fontSize:      { valId: 'val-fontSize', fmt: v => v + 'px' },
+    textSize:      { valId: 'val-textSize', fmt: v => v + 'px' },
+    borderWidth:   { valId: 'val-borderWidth', fmt: v => v + 'px' },
+    borderRadius:  { valId: 'val-borderRadius', fmt: v => v + 'px' },
+};
+
+function bindSliders() {
+    Object.entries(SLIDER_CONFIG).forEach(([id, cfg]) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('input', function() {
+            document.getElementById(cfg.valId).textContent = cfg.fmt(this.value);
+            updatePreview();
+        });
+    });
+}
+
+function updateAllSliderValues() {
+    Object.entries(SLIDER_CONFIG).forEach(([id, cfg]) => {
+        const el = document.getElementById(id);
+        const valEl = document.getElementById(cfg.valId);
+        if (el && valEl) valEl.textContent = cfg.fmt(el.value);
+    });
+}
+
+// ─── CUSTOMIZATION: TABS ─────────────────────────────────────────────────────
+document.querySelectorAll('.cust-tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+        document.querySelectorAll('.cust-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.cust-panel').forEach(p => p.classList.remove('active'));
+        this.classList.add('active');
+        document.getElementById('panel-' + this.dataset.tab).classList.add('active');
+    });
+});
+
+// ─── CUSTOMIZATION: PREVIEW BG TOGGLE ────────────────────────────────────────
+document.querySelectorAll('.preview-bg-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.preview-bg-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        document.getElementById('previewStage').style.background = this.dataset.bg;
+    });
+});
+
+// ─── CUSTOMIZATION: TOGGLE ────────────────────────────────────────────────────
+customizationToggle.addEventListener('click', () => {
+    customizationBody.classList.toggle('show');
+    customizationToggle.querySelector('.arrow').classList.toggle('rotated');
+    if (customizationBody.classList.contains('show')) updatePreview();
+});
+
+// ─── CUSTOMIZATION: DISPLAY VALUE TOGGLE ────────────────────────────────────
+document.getElementById('displayValue').addEventListener('change', updatePreview);
+document.getElementById('textTop').addEventListener('input', updatePreview);
+document.getElementById('textBottom').addEventListener('input', updatePreview);
+
+// ─── CUSTOMIZATION: RESET ────────────────────────────────────────────────────
+const DEFAULTS = { barcodeWidth:2, barcodeHeight:100, margin:10, fontSize:14, textSize:12,
+    bgColor:'#ffffff', lineColor:'#000000', borderWidth:0, borderColor:'#000000',
+    borderRadius:15, displayValue:true, textTop:'', textBottom:'' };
+
+document.getElementById('resetCustomization').addEventListener('click', () => {
+    setSlider('barcodeWidth', DEFAULTS.barcodeWidth);
+    setSlider('barcodeHeight', DEFAULTS.barcodeHeight);
+    setSlider('margin', DEFAULTS.margin);
+    setSlider('fontSize', DEFAULTS.fontSize);
+    setSlider('textSize', DEFAULTS.textSize);
+    setSlider('borderWidth', DEFAULTS.borderWidth);
+    setSlider('borderRadius', DEFAULTS.borderRadius);
+    document.getElementById('bgColor').value = DEFAULTS.bgColor;
+    document.getElementById('lineColor').value = DEFAULTS.lineColor;
+    document.getElementById('borderColor').value = DEFAULTS.borderColor;
+    document.getElementById('bgColorHex').value = DEFAULTS.bgColor.toUpperCase();
+    document.getElementById('lineColorHex').value = DEFAULTS.lineColor.toUpperCase();
+    document.getElementById('borderColorHex').value = DEFAULTS.borderColor.toUpperCase();
+    document.getElementById('displayValue').checked = DEFAULTS.displayValue;
+    document.getElementById('textTop').value = DEFAULTS.textTop;
+    document.getElementById('textBottom').value = DEFAULTS.textBottom;
+    document.querySelectorAll('.preset-card').forEach(c => c.classList.remove('active'));
+    document.getElementById('activePresetBadge').style.display = 'none';
+    updateAllSliderValues();
+    updatePreview();
+    toast('Configuración restablecida', 'warning');
+});
+
+// ─── CUSTOMIZATION: EXPORT / IMPORT ──────────────────────────────────────────
+document.getElementById('exportSettings').addEventListener('click', () => {
+    readCustomization();
+    const json = JSON.stringify(customization, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'barcode-config.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast('Configuración exportada como JSON', 'success');
+});
+
+document.getElementById('importSettingsFile').addEventListener('change', async function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    e.target.value = '';
+    try {
+        const text = await file.text();
+        const cfg = JSON.parse(text);
+        if (cfg.width !== undefined) setSlider('barcodeWidth', cfg.width);
+        if (cfg.height !== undefined) setSlider('barcodeHeight', cfg.height);
+        if (cfg.margin !== undefined) setSlider('margin', cfg.margin);
+        if (cfg.fontSize !== undefined) setSlider('fontSize', cfg.fontSize);
+        if (cfg.textSize !== undefined) setSlider('textSize', cfg.textSize);
+        if (cfg.borderWidth !== undefined) setSlider('borderWidth', cfg.borderWidth);
+        if (cfg.borderRadius !== undefined) setSlider('borderRadius', cfg.borderRadius);
+        if (cfg.background) { document.getElementById('bgColor').value = cfg.background; document.getElementById('bgColorHex').value = cfg.background.toUpperCase(); }
+        if (cfg.lineColor) { document.getElementById('lineColor').value = cfg.lineColor; document.getElementById('lineColorHex').value = cfg.lineColor.toUpperCase(); }
+        if (cfg.borderColor) { document.getElementById('borderColor').value = cfg.borderColor; document.getElementById('borderColorHex').value = cfg.borderColor.toUpperCase(); }
+        if (cfg.displayValue !== undefined) document.getElementById('displayValue').checked = cfg.displayValue;
+        if (cfg.textTop !== undefined) document.getElementById('textTop').value = cfg.textTop;
+        if (cfg.textBottom !== undefined) document.getElementById('textBottom').value = cfg.textBottom;
+        updateAllSliderValues();
+        updatePreview();
+        toast('Configuración importada correctamente', 'success');
+    } catch(err) {
+        toast('Error al importar: archivo JSON inválido', 'error');
+    }
+});
+
+applyCustomizationBtn.addEventListener('click', () => {
+    readCustomization();
+    renderBarcodes();
+    toast('Personalización aplicada a todos los códigos', 'success');
+});
+
+// ─── CUSTOMIZATION: INIT ─────────────────────────────────────────────────────
+buildPresets();
+buildSwatches('swatches-bg', SWATCH_COLORS.bg, 'bgColor', 'bgColorHex');
+buildSwatches('swatches-line', SWATCH_COLORS.line, 'lineColor', 'lineColorHex');
+buildSwatches('swatches-border', SWATCH_COLORS.border, 'borderColor', 'borderColorHex');
+syncColorToHex('bgColor', 'bgColorHex');
+syncColorToHex('lineColor', 'lineColorHex');
+syncColorToHex('borderColor', 'borderColorHex');
+bindSliders();
+updateAllSliderValues();
+
+// ─── CLEAR ────────────────────────────────────────────────────────────────────
+clearAllBtn.addEventListener('click', () => {
+    if (!confirm('¿Eliminar todos los códigos?')) return;
+    codes = [];
+    currentPage = 1;
+    renderBarcodes();
+    toast('Lista limpiada', 'warning');
+});
+
+// ─── DOWNLOAD ZIP ─────────────────────────────────────────────────────────────
+downloadAllBtn.addEventListener('click', async function() {
+    if (!codes.length) return;
+    if (!confirm(`¿Descargar ${codes.length} códigos en un ZIP?`)) return;
+    const orig = downloadAllBtn.innerHTML;
+    downloadAllBtn.disabled = true;
+    downloadAllBtn.innerHTML = '⏳ Generando...';
+    try {
+        const zip = new JSZip();
+        const tmp = document.createElement('canvas');
+        for (let i = 0; i < codes.length; i++) {
+            try {
+                await generateCode(tmp, codes[i].value, customization);
+                zip.file('barcode_' + codes[i].value + '.png', tmp.toDataURL('image/png').split(',')[1], { base64: true });
+                if (i % 20 === 0) downloadAllBtn.innerHTML = `⏳ ${i+1}/${codes.length}`;
+            } catch(e) {}
+        }
+        downloadAllBtn.innerHTML = '📦 Creando ZIP...';
+        const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+        const fecha = new Date().toISOString().slice(0,10);
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'codigos_barras_' + fecha + '.zip';
+        a.click();
+        URL.revokeObjectURL(a.href);
+        toast(`✓ ${codes.length} códigos descargados en ZIP`, 'success');
+    } catch(e) {
+        toast('Error al crear ZIP', 'error');
+    } finally {
+        downloadAllBtn.innerHTML = orig;
+        downloadAllBtn.disabled = false;
+    }
+});
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+updateFormatInfo();
+updatePreview();</script>
 </body>
 </html>
